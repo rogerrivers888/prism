@@ -66,4 +66,11 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 Railway builds the backend with Railpack (no Dockerfile). Config lives in
 `backend/railway.json`: migrations run as a pre-deploy step, then Uvicorn
 serves the app, with `/health` as the healthcheck. The Railway service's root
-directory must be set to `backend`.
+directory must be set to `backend`, and it needs an explicit `PORT=8080`
+environment variable.
+
+Uvicorn binds `0.0.0.0` (IPv4) because Railway's healthchecker reaches the
+container over IPv4 — an IPv6-only `::` bind passes the build but fails the
+healthcheck. If a service ever needs to be reachable over Railway's IPv6-only
+private network, the app will have to listen on both stacks (e.g. a server
+that supports multiple binds), not just switch back to `::`.
