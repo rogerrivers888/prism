@@ -65,5 +65,4 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 
 Railway builds the backend with Railpack (no Dockerfile). Config lives in
 `backend/railway.json`: migrations run as a pre-deploy step, then Uvicorn
-serves the app, with `/health` as the healthcheck. The Railway service's root
-directory must be set to `backend`.
+serves the app. The Railway service's root directory must be set to `backend`.
