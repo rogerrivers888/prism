@@ -17,6 +17,9 @@ class _Payload(BaseModel):
 class TradeExecuted(_Payload):
     event_type: Literal["TradeExecuted"] = "TradeExecuted"
     instrument: str
+    # Spread bets, options and shares need different maths for everything
+    # downstream; this must be captured at write time, not inferred later.
+    instrument_type: Literal["spreadbet", "option", "share"]
     side: Literal["buy", "sell"]
     quantity: Decimal
     price: Decimal

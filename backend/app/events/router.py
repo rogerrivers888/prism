@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.events import ConcurrencyError, append, read_stream
+from app.projections import catch_up
 
 router = APIRouter(prefix="/dev", tags=["dev (temporary)"])
 
@@ -62,6 +63,14 @@ async def append_event(body: AppendEventRequest, session: SessionDep) -> EventOu
     except ConcurrencyError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
     await session.commit()
+
+    # Keep the read model current on every write until a real projection
+    # worker exists. The append above is already committed, so a projector
+    # failure can't lose the event.
+    applied = await catch_up(session)
+    if applied:
+        await session.commit()
+
     return EventOut.model_validate(event)
 
 

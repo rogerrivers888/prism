@@ -11,6 +11,7 @@ NOW = datetime(2026, 8, 10, 12, 0, 0, tzinfo=UTC)
 
 TRADE = {
     "instrument": "VUSA",
+    "instrument_type": "share",
     "side": "buy",
     "quantity": "10",
     "price": "71.42",
