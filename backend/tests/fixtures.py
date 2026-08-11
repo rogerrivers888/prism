@@ -115,6 +115,44 @@ async def add_metrics(
     await session.flush()
 
 
+async def add_inventory_history(
+    session: AsyncSession,
+    ticker: str,
+    *,
+    latest_days: float,
+    prior_days: float,
+    latest_period: date = PERIOD_END,
+    published_at: date = PUBLISHED,
+    prior_published_at: date | None = None,
+) -> None:
+    """Two periods of days inventory a year apart, for direction tests.
+
+    Replaces any single-period days_inventory the baseline already wrote, so
+    the ticker's history is exactly the two periods asked for.
+    """
+    await session.execute(
+        text("DELETE FROM fundamentals WHERE ticker = :t AND metric = 'days_inventory'"),
+        {"t": ticker},
+    )
+    prior_period = date(
+        latest_period.year - 1, latest_period.month, latest_period.day
+    )
+    await add_metrics(
+        session,
+        ticker,
+        {"days_inventory": prior_days},
+        published_at=prior_published_at or published_at,
+        period_end=prior_period,
+    )
+    await add_metrics(
+        session,
+        ticker,
+        {"days_inventory": latest_days},
+        published_at=published_at,
+        period_end=latest_period,
+    )
+
+
 async def add_sector(
     session: AsyncSession,
     sector: str,

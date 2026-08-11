@@ -14,7 +14,8 @@ from statistics import fmean
 #
 # v2: quality gains gross_profitability (Novy-Marx) as a scored input and
 #     demotes gross_margin to display-only, which changes both the quality
-#     score and its coverage denominator.
+#     score and its coverage denominator; cycle gains days_inventory_change,
+#     derived from history, which changes the cycle score and denominator.
 SCORING_VERSION = "v2"
 
 # A percentile against fewer peers than this is noise, so fall back to the

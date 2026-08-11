@@ -26,7 +26,18 @@ METRICS = (
         name="days_inventory",
         higher_is_better=False,
         bands=((20, 100), (40, 82), (60, 65), (85, 48), (110, 30), (150, 12), (200, 0)),
-        description="Days inventory outstanding",
+        description="Days inventory outstanding — the level",
+    ),
+    MetricSpec(
+        name="days_inventory_change",
+        higher_is_better=False,
+        bands=((-40, 100), (-20, 88), (-8, 70), (0, 50), (8, 30), (20, 12), (40, 0)),
+        description=(
+            "Year-on-year change in days inventory, in days. Derived from "
+            "fundamentals history, not ingested separately. Sits beside the "
+            "level because 94 days falling is bullish and 94 days rising is "
+            "bearish — direction carries more information than level"
+        ),
     ),
     MetricSpec(
         name="capacity_utilisation",

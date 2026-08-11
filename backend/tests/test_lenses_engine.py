@@ -211,11 +211,52 @@ async def test_stored_dispersion_is_null_with_too_few_usable_lenses(session):
     assert row.usable_lenses == 0  # recorded, so the NULL can be explained
 
 
+async def test_inventory_direction_is_derived_through_the_full_pipeline(session):
+    await fixtures.add_company(session, "FALL", "semiconductors")
+    await fixtures.add_company(session, "RISE", "semiconductors")
+    # Identical level, opposite direction.
+    await fixtures.add_inventory_history(session, "FALL", latest_days=94, prior_days=120)
+    await fixtures.add_inventory_history(session, "RISE", latest_days=94, prior_days=70)
+    await session.flush()
+
+    fall = _lens(await score_ticker(session, "FALL", date(2026, 6, 30)), "cycle")
+    rise = _lens(await score_ticker(session, "RISE", date(2026, 6, 30)), "cycle")
+
+    assert fall.inputs["metrics"]["days_inventory_change"]["value"] == pytest.approx(-26.0)
+    assert rise.inputs["metrics"]["days_inventory_change"]["value"] == pytest.approx(24.0)
+    # Same days_inventory level, but the cycle scores diverge.
+    assert fall.inputs["metrics"]["days_inventory"]["value"] == 94.0
+    assert rise.inputs["metrics"]["days_inventory"]["value"] == 94.0
+    assert fall.score > rise.score
+    assert fall.coverage == rise.coverage == pytest.approx(1.0)
+
+
+async def test_prior_year_figure_published_late_is_not_used_early(session):
+    # The point-in-time rule applies to derivation too: a comparison period
+    # disclosed after as_of cannot inform a score dated before it.
+    await fixtures.add_company(session, "LATEHIST", "semiconductors")
+    await fixtures.add_inventory_history(
+        session,
+        "LATEHIST",
+        latest_days=94,
+        prior_days=120,
+        prior_published_at=date(2026, 7, 15),
+    )
+    await session.flush()
+
+    before = _lens(await score_ticker(session, "LATEHIST", date(2026, 6, 30)), "cycle")
+    after = _lens(await score_ticker(session, "LATEHIST", date(2026, 7, 15)), "cycle")
+
+    assert before.inputs["metrics"]["days_inventory_change"]["excluded"] == "not_available"
+    assert before.coverage == pytest.approx(5 / 6, abs=1e-4)
+    assert after.inputs["metrics"]["days_inventory_change"]["value"] == pytest.approx(-26.0)
+
+
 async def test_bands_endpoint_exposes_every_band_table():
     from app.lenses.router import get_bands
 
     bands = await get_bands()
-    assert len(bands) == sum(len(lens.metrics) for lens in LENSES) == 29
+    assert len(bands) == sum(len(lens.metrics) for lens in LENSES) == 30
     # Display-only metrics still publish their (inert) table for review.
     assert {b.metric for b in bands if not b.scored} == {"gross_margin"}
     assert {b.lens for b in bands} == {lens.name for lens in LENSES}

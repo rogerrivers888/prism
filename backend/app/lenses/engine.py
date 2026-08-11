@@ -17,12 +17,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db import Base
 from app.fundamentals import (
     all_securities,
+    metric_history_as_of,
     metrics_as_of,
     sector_of,
     tickers_in_sector,
 )
 from app.lenses import cycle, growth, momentum, quality, trend, value
 from app.lenses import guards
+from app.lenses.derived import SOURCE_METRICS, derive_all
 from app.lenses.base import (
     METHOD_BANDS,
     METHOD_PERCENTILE,
@@ -212,6 +214,26 @@ def peer_values(
 # --------------------------------------------------------------------------
 
 
+async def sector_metrics_as_of(
+    session: AsyncSession, tickers: list[str], as_of: date
+) -> dict[str, dict[str, float]]:
+    """Ingested metrics plus derived ones, for a whole sector, as known on as_of.
+
+    Derivation happens here rather than inside scoring so that evaluate_lens
+    stays pure, and before peer sets are built so a derived metric can be
+    percentile-ranked like any other. Both reads apply published_at <= as_of
+    inside app.fundamentals and cannot skip it.
+    """
+    metrics = await metrics_as_of(session, tickers, as_of)
+    history = await metric_history_as_of(session, tickers, list(SOURCE_METRICS), as_of)
+    for ticker, values in metrics.items():
+        for name, computed in derive_all(history.get(ticker, {})).items():
+            # An explicitly ingested figure wins, so deriving never silently
+            # overwrites something the source actually reported.
+            values.setdefault(name, computed)
+    return metrics
+
+
 async def score_ticker(
     session: AsyncSession, ticker: str, as_of: date
 ) -> list[LensScore]:
@@ -221,9 +243,7 @@ async def score_ticker(
         return []
 
     peers_tickers = await tickers_in_sector(session, sector)
-    # One point-in-time read for the whole sector: published_at <= as_of is
-    # applied inside metrics_as_of and cannot be skipped here.
-    sector_metrics = await metrics_as_of(session, peers_tickers, as_of)
+    sector_metrics = await sector_metrics_as_of(session, peers_tickers, as_of)
     metrics = sector_metrics.get(ticker, {})
     return evaluate_all(ticker, as_of, sector, metrics, peer_values(sector_metrics))
 
@@ -243,7 +263,7 @@ async def score_universe(session: AsyncSession, as_of: date) -> int:
 
     written = 0
     for sector, tickers in by_sector.items():
-        sector_metrics = await metrics_as_of(session, tickers, as_of)
+        sector_metrics = await sector_metrics_as_of(session, tickers, as_of)
         peers = peer_values(sector_metrics)
         for ticker in tickers:
             scores = evaluate_all(

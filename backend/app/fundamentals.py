@@ -81,6 +81,49 @@ async def metrics_as_of(
     return out
 
 
+async def metric_history_as_of(
+    session: AsyncSession, tickers: list[str], metrics: list[str], as_of: date
+) -> dict[str, dict[str, list[tuple[date, float]]]]:
+    """Every period of the named metrics that had been published by as_of.
+
+    Same point-in-time contract as ``metrics_as_of``, but keeps the periods
+    apart instead of collapsing to the latest one, so year-on-year changes can
+    be derived. Within each period the most recently published figure wins, so
+    a restatement supersedes the original only from its own published_at.
+
+    Returned newest period first, per metric.
+    """
+    if not tickers or not metrics:
+        return {}
+
+    rows = await session.execute(
+        select(
+            Fundamental.ticker,
+            Fundamental.metric,
+            Fundamental.period_end,
+            Fundamental.value,
+        )
+        .where(
+            Fundamental.published_at <= as_of,
+            Fundamental.ticker.in_(tickers),
+            Fundamental.metric.in_(metrics),
+        )
+        .distinct(Fundamental.ticker, Fundamental.metric, Fundamental.period_end)
+        .order_by(
+            Fundamental.ticker,
+            Fundamental.metric,
+            Fundamental.period_end.desc(),
+            Fundamental.published_at.desc(),
+        )
+    )
+
+    out: dict[str, dict[str, list[tuple[date, float]]]] = {t: {} for t in tickers}
+    for ticker, metric, period_end, value in rows:
+        if value is not None:
+            out[ticker].setdefault(metric, []).append((period_end, float(value)))
+    return out
+
+
 async def sector_of(session: AsyncSession, ticker: str) -> str | None:
     return (
         await session.execute(
