@@ -183,6 +183,29 @@ class EODHDProvider:
         payload = await self._get(f"/fundamentals/{ticker}")
         return FetchResult(endpoint="fundamentals", payload=payload, calls=1)
 
+    async def search(self, query: str, limit: int = 8) -> list[dict]:
+        """Resolve a company name or partial symbol to real tickers.
+
+        Exists because the failure it prevents is indistinguishable from a
+        bug: typing a company name gets a bare 404, which reads as "the app
+        is broken" rather than "that isn't a ticker".
+        """
+        payload = await self._get(f"/search/{query}", limit=limit)
+        if not isinstance(payload, list):
+            return []
+        return [
+            {
+                "ticker": f"{hit.get('Code')}.{'US' if hit.get('Exchange') in ('US', 'NYSE', 'NASDAQ', 'BATS', 'AMEX') else hit.get('Exchange')}",
+                "code": hit.get("Code"),
+                "exchange": hit.get("Exchange"),
+                "name": hit.get("Name"),
+                "type": hit.get("Type"),
+                "currency": hit.get("Currency"),
+            }
+            for hit in payload
+            if hit.get("Code")
+        ]
+
     async def fetch_dividends(self, ticker: str) -> FetchResult:
         payload = await self._get(f"/div/{ticker}", **{"from": "1980-01-01"})
         return FetchResult(endpoint="div", payload=payload, calls=1)

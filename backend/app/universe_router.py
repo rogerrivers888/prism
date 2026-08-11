@@ -189,6 +189,24 @@ async def universe_health(session: SessionDep) -> dict:
     }
 
 
+@router.get("/universe/search")
+async def search_securities(q: str, session: SessionDep) -> list[dict]:
+    """Look a company up by name or partial symbol before adding it."""
+    from app.config import settings
+    from app.ingest.eodhd import EODHDProvider
+
+    if not settings.eodhd_api_key:
+        raise HTTPException(status_code=503, detail="EODHD_API_KEY is not configured")
+    if len(q.strip()) < 2:
+        return []
+
+    held = set(
+        (await session.execute(select(Security.ticker))).scalars()
+    )
+    hits = await EODHDProvider(settings.eodhd_api_key).search(q.strip())
+    return [{**hit, "already_held": hit["code"] in held} for hit in hits]
+
+
 @router.post("/universe/securities")
 async def add_securities(body: AddSecurityIn, session: SessionDep) -> dict:
     """Ingest new tickers: metadata, prices, fundamentals, then score them.

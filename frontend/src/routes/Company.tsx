@@ -74,6 +74,14 @@ export function Company() {
               {data.ticker}
             </h1>
             <p className="text-sm text-text-muted">{data.name}</p>
+            {/* A just-added company has no stored row until the nightly run;
+                the scores below were computed on the spot. */}
+            {!data.stored && (
+              <p className="mt-1 inline-block rounded border border-warning/50 px-2 py-0.5 text-[11px] text-warning">
+                Scored just now, not yet stored — the nightly run at 02:00 UTC will
+                persist these and add it to the daily job.
+              </p>
+            )}
             <p className="mt-1 text-xs text-text-muted">
               {data.sector.replace(/_/g, " ")}
               {data.subsector ? ` · ${data.subsector}` : ""} · {data.exchange}

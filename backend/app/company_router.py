@@ -43,6 +43,11 @@ class LensDetail(BaseModel):
 
 
 class CompanyOut(BaseModel):
+    # False when nothing was stored for this date and the scores were computed
+    # on the fly. A security added today has no stored row until the nightly
+    # run, and six "n/a" bars would read as "no lens applies" rather than
+    # "not scored yet" — so it is scored live and says which it is.
+    stored: bool
     ticker: str
     name: str
     sector: str
@@ -103,6 +108,15 @@ async def get_company(ticker: str, session: SessionDep, as_of: date | None = Non
             )
         ).scalars()
     }
+    live: dict[str, object] = {}
+    if not rows:
+        # Nothing stored: score it now so the page is useful immediately.
+        # Not persisted — the nightly job owns what gets written.
+        from app.lenses.engine import score_ticker
+
+        for result in await score_ticker(session, security.ticker, as_of or date.today()):
+            live[result.lens] = result
+
     spread = (
         await session.execute(
             select(DispersionDaily).where(
@@ -115,7 +129,7 @@ async def get_company(ticker: str, session: SessionDep, as_of: date | None = Non
 
     details: list[LensDetail] = []
     for lens in LENSES:
-        row = rows.get(lens.name)
+        row = rows.get(lens.name) or live.get(lens.name)
         median = medians.get(lens.name)
         details.append(
             LensDetail(
@@ -151,6 +165,13 @@ async def get_company(ticker: str, session: SessionDep, as_of: date | None = Non
     highest = max(usable, key=lambda d: d.score).lens if usable else None
     lowest = min(usable, key=lambda d: d.score).lens if usable else None
 
+    # Dispersion computed alongside when the scores were, so a freshly added
+    # company gets the headline figure rather than a dash.
+    live_dispersion = None
+    if live and len(usable) >= 3:
+        scores = [d.score for d in usable]
+        live_dispersion = round(max(scores) - min(scores), 4)
+
     return CompanyOut(
         ticker=security.ticker,
         name=security.name,
@@ -163,12 +184,13 @@ async def get_company(ticker: str, session: SessionDep, as_of: date | None = Non
         is_active=security.is_active,
         as_of=as_of,
         scoring_version=SCORING_VERSION,
+        stored=bool(rows),
         dispersion=(
             float(spread.dispersion)
             if spread and spread.dispersion is not None
-            else None
+            else live_dispersion
         ),
-        usable_lenses=spread.usable_lenses if spread else None,
+        usable_lenses=spread.usable_lenses if spread else len(usable),
         highest_lens=highest,
         lowest_lens=lowest,
         lenses=details,
