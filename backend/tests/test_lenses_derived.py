@@ -38,9 +38,17 @@ def test_same_level_scores_differently_depending_on_direction():
 
 def test_derived_from_inventory_and_cogs_when_days_not_stored():
     # Both are stored by ingest anyway, so no separate series is needed.
+    # COGS is a flow, so it is annualised over four quarters rather than
+    # multiplied up from one — a single quarter would overstate days by ~4x.
+    quarters = [
+        date(2026, 3, 31), date(2025, 12, 31), date(2025, 9, 30), date(2025, 6, 30),
+        date(2025, 3, 31), date(2024, 12, 31), date(2024, 9, 30), date(2024, 6, 30),
+    ]
     history = {
-        "inventory": [(LATEST, 100.0), (PRIOR, 100.0)],
-        "cogs": [(LATEST, 400.0), (PRIOR, 500.0)],
+        "inventory": [(quarters[0], 100.0), (quarters[4], 100.0)],
+        # Recent year totals 400, prior year totals 500.
+        "cogs": [(q, 100.0) for q in quarters[:4]]
+        + [(q, 125.0) for q in quarters[4:]],
     }
     # 100/400*365 = 91.25 days now vs 100/500*365 = 73 days a year ago.
     assert days_inventory_change(history) == pytest.approx(18.25)

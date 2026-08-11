@@ -8,6 +8,12 @@ class Settings(BaseSettings):
     # Locally it comes from .env or the shell (see README).
     database_url: str = "postgresql://prism:prism@localhost:5435/prism"
 
+    eodhd_api_key: str = ""
+    # The ALL-IN-ONE plan allows 100k/day, so this is no longer a hard
+    # constraint — it stays as a safety rail against a runaway backfill loop
+    # quietly burning the quota.
+    eodhd_daily_call_budget: int = 100_000
+
     @property
     def async_database_url(self) -> str:
         """DATABASE_URL rewritten for the asyncpg driver.

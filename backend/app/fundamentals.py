@@ -13,7 +13,7 @@ a select() on Fundamental at a call site is exactly the bug this prevents.
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, Numeric, Text, func, select
+from sqlalchemy import Boolean, Date, DateTime, Numeric, Text, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,6 +26,31 @@ class Security(Base):
     ticker: Mapped[str] = mapped_column(Text, primary_key=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     sector: Mapped[str] = mapped_column(Text, nullable=False)
+    exchange: Mapped[str | None] = mapped_column(Text)
+    # Provider's finer classification, kept so biotech can eventually be
+    # separated from asset-heavy healthcare.
+    subsector: Mapped[str | None] = mapped_column(Text)
+    # Stored, never converted at ingest.
+    currency: Mapped[str | None] = mapped_column(Text)
+    market_cap: Mapped[Decimal | None] = mapped_column(Numeric)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PriceDaily(Base):
+    __tablename__ = "prices_daily"
+
+    ticker: Mapped[str] = mapped_column(Text, primary_key=True)
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    open: Mapped[Decimal | None] = mapped_column(Numeric)
+    high: Mapped[Decimal | None] = mapped_column(Numeric)
+    low: Mapped[Decimal | None] = mapped_column(Numeric)
+    close: Mapped[Decimal | None] = mapped_column(Numeric)
+    adjusted_close: Mapped[Decimal | None] = mapped_column(Numeric)
+    volume: Mapped[Decimal | None] = mapped_column(Numeric)
+    currency: Mapped[str | None] = mapped_column(Text)
 
 
 class Fundamental(Base):
@@ -37,6 +62,11 @@ class Fundamental(Base):
     published_at: Mapped[date] = mapped_column(Date, primary_key=True)
     value: Mapped[Decimal | None] = mapped_column(Numeric)
     source: Mapped[str | None] = mapped_column(Text)
+    # True when published_at was estimated from period_end rather than taken
+    # from a real filing date. Backtests can exclude these.
+    published_at_estimated: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
     ingested_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -121,6 +151,33 @@ async def metric_history_as_of(
     for ticker, metric, period_end, value in rows:
         if value is not None:
             out[ticker].setdefault(metric, []).append((period_end, float(value)))
+    return out
+
+
+async def price_history_as_of(
+    session: AsyncSession, tickers: list[str], as_of: date, limit: int = 400
+) -> dict[str, list[tuple[date, float]]]:
+    """Adjusted closes up to and including as_of, newest first.
+
+    A closing price is public the day it prints, so ``date <= as_of`` is the
+    whole point-in-time rule here — there is no separate publication lag.
+    """
+    if not tickers:
+        return {}
+
+    out: dict[str, list[tuple[date, float]]] = {t: [] for t in tickers}
+    for ticker in tickers:
+        rows = await session.execute(
+            select(PriceDaily.date, PriceDaily.adjusted_close)
+            .where(
+                PriceDaily.ticker == ticker,
+                PriceDaily.date <= as_of,
+                PriceDaily.adjusted_close.is_not(None),
+            )
+            .order_by(PriceDaily.date.desc())
+            .limit(limit)
+        )
+        out[ticker] = [(d, float(c)) for d, c in rows]
     return out
 
 

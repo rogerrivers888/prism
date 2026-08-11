@@ -19,6 +19,7 @@ from app.fundamentals import (
     all_securities,
     metric_history_as_of,
     metrics_as_of,
+    price_history_as_of,
     sector_of,
     tickers_in_sector,
 )
@@ -226,8 +227,10 @@ async def sector_metrics_as_of(
     """
     metrics = await metrics_as_of(session, tickers, as_of)
     history = await metric_history_as_of(session, tickers, list(SOURCE_METRICS), as_of)
+    prices = await price_history_as_of(session, tickers, as_of)
     for ticker, values in metrics.items():
-        for name, computed in derive_all(history.get(ticker, {})).items():
+        derived = derive_all(history.get(ticker, {}), prices.get(ticker, ()))
+        for name, computed in derived.items():
             # An explicitly ingested figure wins, so deriving never silently
             # overwrites something the source actually reported.
             values.setdefault(name, computed)
