@@ -82,6 +82,66 @@ def test_asset_light_sector_excludes_price_to_book():
     assert result.coverage == pytest.approx(0.8)
 
 
+def test_healthcare_is_asset_heavy_and_keeps_price_to_book():
+    # Pharma and devices carry plant, inventory and real book value. Biotech
+    # is the known exception we cannot yet distinguish.
+    result = _score(value.LENS, "healthcare", FULL)
+    assert result.inputs["metrics"]["price_to_book"]["excluded"] is None
+    assert result.coverage == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("sector", ["financials", "banks", "insurance"])
+def test_financials_exclude_ev_and_ebitda_metrics_but_keep_price_to_book(sector):
+    from app.lenses import quality
+
+    value_result = _score(value.LENS, sector, FULL)
+    metrics = value_result.inputs["metrics"]
+    # Undefined, not merely unflattering: deposits are funding, not leverage.
+    assert metrics["ev_ebitda"]["excluded"] == "financials_ev_ebitda_undefined"
+    assert metrics["ev_ebitda"]["score"] is None
+    # P/B is the opposite case — one of the better value metrics here.
+    assert metrics["price_to_book"]["excluded"] is None
+    assert metrics["price_to_book"]["score"] is not None
+    assert value_result.coverage == pytest.approx(0.8)
+
+    quality_metrics = {
+        "roic": 12.0,
+        "gross_margin": 40.0,
+        "net_debt_to_ebitda": 1.5,
+        "interest_cover": 8.0,
+        "fcf_conversion": 85.0,
+    }
+    quality_result = _score(quality.LENS, sector, quality_metrics)
+    assert (
+        quality_result.inputs["metrics"]["net_debt_to_ebitda"]["excluded"]
+        == "financials_ev_ebitda_undefined"
+    )
+    assert quality_result.coverage == pytest.approx(0.8)
+
+
+def test_financials_guard_can_push_coverage_below_the_minimum():
+    # A thin financial loses EV/EBITDA and lands under half coverage. A null
+    # score is the correct outcome; the survivors are not reweighted to hide it.
+    thin = {"pe_ratio": 11.0, "ev_ebitda": 9.0, "price_to_book": 0.9}
+    result = _score(value.LENS, "banks", thin)
+
+    assert result.coverage == pytest.approx(0.4)
+    assert result.score is None
+    assert result.inputs["withheld"] == "coverage_below_minimum"
+
+
+def test_ev_ebitda_derived_metrics_are_declared_not_name_matched():
+    # The guard keys off the metric's own declaration, so a future EV or
+    # EBITDA ratio is covered by declaring itself rather than by a name list.
+    derived = {
+        (lens.name, spec.name)
+        for lens in LENSES
+        for spec in lens.metrics
+        if spec.ev_or_ebitda_derived
+    }
+    assert derived == {("value", "ev_ebitda"), ("quality", "net_debt_to_ebitda")}
+
+
 def test_negative_fcf_excludes_yield_and_flags_for_classification():
     # Structural or cyclical? The number alone cannot say, so we flag.
     result = _score(value.LENS, "industrials", dict(FULL, fcf=-100.0))

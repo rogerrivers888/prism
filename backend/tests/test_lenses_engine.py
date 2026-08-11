@@ -4,8 +4,14 @@ from datetime import date
 
 import pytest
 
-from app.lenses.base import SCORING_VERSION
-from app.lenses.engine import score_ticker, score_universe, stored_scores
+from app.lenses.base import SCORING_VERSION, dispersion
+from app.lenses.engine import (
+    LENSES,
+    score_ticker,
+    score_universe,
+    stored_dispersion,
+    stored_scores,
+)
 from tests import fixtures
 
 PERIOD = date(2026, 3, 31)
@@ -103,8 +109,6 @@ async def test_cycle_inapplicable_for_non_cyclical_sector(session):
 async def test_dispersion_null_when_fewer_than_three_lenses_usable(session):
     # Only value and quality have enough inputs; trend, growth, momentum and
     # cycle are starved, so there is no honest disagreement figure.
-    from app.lenses.base import dispersion
-
     await fixtures.add_company(
         session,
         "SPARSE",
@@ -151,6 +155,71 @@ async def test_small_sector_falls_back_to_absolute_bands(session):
     result = _lens(await score_ticker(session, "UTL00", date(2026, 6, 30)), "value")
     assert result.inputs["metrics"]["pe_ratio"]["method"] == "absolute_bands"
     assert result.inputs["metrics"]["pe_ratio"]["peer_count"] == 7
+
+
+async def test_financials_lose_ebitda_metrics_through_the_full_pipeline(session):
+    await fixtures.add_company(session, "BANK", "banks")
+    await session.flush()
+
+    scores = await score_ticker(session, "BANK", date(2026, 6, 30))
+    value_metrics = _lens(scores, "value").inputs["metrics"]
+    quality_metrics = _lens(scores, "quality").inputs["metrics"]
+
+    assert value_metrics["ev_ebitda"]["excluded"] == "financials_ev_ebitda_undefined"
+    assert value_metrics["price_to_book"]["score"] is not None  # kept
+    assert (
+        quality_metrics["net_debt_to_ebitda"]["excluded"]
+        == "financials_ev_ebitda_undefined"
+    )
+    assert _lens(scores, "value").coverage == pytest.approx(0.8)
+    assert _lens(scores, "quality").coverage == pytest.approx(0.8)
+
+
+async def test_score_universe_persists_dispersion(session):
+    await fixtures.add_company(session, "AAA", "industrials")
+    await session.flush()
+    as_of = date(2026, 6, 30)
+
+    await score_universe(session, as_of)
+    await session.commit()
+
+    row = await stored_dispersion(session, "AAA", as_of)
+    assert row is not None
+    assert row.usable_lenses == 5  # cycle is inapplicable for industrials
+    scores = await stored_scores(session, "AAA", as_of)
+    assert float(row.dispersion) == pytest.approx(dispersion(scores))
+
+    # Re-running overwrites in place rather than duplicating.
+    await score_universe(session, as_of)
+    await session.commit()
+    assert (await stored_dispersion(session, "AAA", as_of)) is not None
+
+
+async def test_stored_dispersion_is_null_with_too_few_usable_lenses(session):
+    await fixtures.add_company(
+        session, "BARE", "consumer_staples", {"pe_ratio": 12.0, "fcf_yield": 5.0}
+    )
+    await session.flush()
+    as_of = date(2026, 6, 30)
+
+    await score_universe(session, as_of)
+    await session.commit()
+
+    row = await stored_dispersion(session, "BARE", as_of)
+    assert row.dispersion is None
+    assert row.usable_lenses == 0  # recorded, so the NULL can be explained
+
+
+async def test_bands_endpoint_exposes_every_band_table():
+    from app.lenses.router import get_bands
+
+    bands = await get_bands()
+    assert len(bands) == sum(len(lens.metrics) for lens in LENSES) == 28
+    assert {b.lens for b in bands} == {lens.name for lens in LENSES}
+    for band in bands:
+        assert len(band.breakpoints) >= 2
+        values = [v for v, _ in band.breakpoints]
+        assert values == sorted(values)
 
 
 async def test_score_universe_persists_and_is_rerunnable(session):

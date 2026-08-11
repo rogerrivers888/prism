@@ -16,7 +16,11 @@ METRICS = (
         name="ev_ebitda",
         higher_is_better=False,
         bands=((3, 100), (6, 85), (9, 65), (12, 50), (16, 30), (25, 10), (40, 0)),
-        description="Enterprise value / EBITDA; excluded when EBITDA <= 0",
+        description=(
+            "Enterprise value / EBITDA; excluded when EBITDA <= 0 and for "
+            "financials, where it is undefined"
+        ),
+        ev_or_ebitda_derived=True,
     ),
     MetricSpec(
         name="fcf_yield",
@@ -28,7 +32,10 @@ METRICS = (
         name="price_to_book",
         higher_is_better=False,
         bands=((0.5, 100), (1, 85), (1.5, 70), (2.5, 50), (4, 30), (7, 12), (12, 0)),
-        description="Price / book; excluded for asset-light sectors",
+        description=(
+            "Price / book; excluded for asset-light sectors, kept for "
+            "financials where book value is close to the real economics"
+        ),
     ),
     MetricSpec(
         name="dividend_yield",

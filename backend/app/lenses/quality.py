@@ -23,7 +23,11 @@ METRICS = (
         name="net_debt_to_ebitda",
         higher_is_better=False,
         bands=((-1, 100), (0, 92), (1, 78), (2, 60), (3, 42), (4.5, 22), (6, 0)),
-        description="Net debt / EBITDA; negative means net cash",
+        description=(
+            "Net debt / EBITDA; negative means net cash. Excluded for "
+            "financials, where deposits are funding rather than leverage"
+        ),
+        ev_or_ebitda_derived=True,
     ),
     MetricSpec(
         name="interest_cover",

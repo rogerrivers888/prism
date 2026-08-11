@@ -39,6 +39,10 @@ class MetricSpec:
     higher_is_better: bool
     bands: tuple[tuple[float, float], ...]
     description: str = ""
+    # Built from enterprise value or EBITDA, and therefore undefined for
+    # financials. Declared on the metric rather than matched by name, so a
+    # new EV or EBITDA ratio is guarded by its own declaration.
+    ev_or_ebitda_derived: bool = False
 
 
 @dataclass(frozen=True)
@@ -145,6 +149,16 @@ class LensScore:
     scoring_version: str = SCORING_VERSION
 
 
+def usable_scores(scores: Sequence[LensScore]) -> list[float]:
+    """Scores that can contribute to dispersion.
+
+    A lens must be applicable *and* have produced a score: an applicable lens
+    whose coverage was too thin carries no information about disagreement, so
+    it can neither widen nor narrow the spread.
+    """
+    return [s.score for s in scores if s.applicable and s.score is not None]
+
+
 def dispersion(scores: Sequence[LensScore]) -> float | None:
     """Spread between the most and least favourable applicable lens.
 
@@ -157,7 +171,7 @@ def dispersion(scores: Sequence[LensScore]) -> float | None:
     applicable lens whose coverage was too thin carries no information about
     disagreement, so it cannot widen or narrow the spread.
     """
-    usable = [s.score for s in scores if s.applicable and s.score is not None]
+    usable = usable_scores(scores)
     if len(usable) < 3:
         return None
     return round(max(usable) - min(usable), 4)

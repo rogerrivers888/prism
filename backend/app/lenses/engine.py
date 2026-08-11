@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, Numeric, Text, select
+from sqlalchemy import Boolean, Date, Integer, Numeric, Text, select
 from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -35,6 +35,7 @@ from app.lenses.base import (
     band_score,
     dispersion,
     percentile_score,
+    usable_scores,
 )
 
 LENSES: tuple[Lens, ...] = (
@@ -60,6 +61,18 @@ class LensScoreDaily(Base):
     coverage: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
     applicable: Mapped[bool] = mapped_column(Boolean, nullable=False)
     inputs: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+
+class DispersionDaily(Base):
+    """One row per ticker per day — not per lens, hence its own table."""
+
+    __tablename__ = "dispersion_daily"
+
+    ticker: Mapped[str] = mapped_column(Text, primary_key=True)
+    as_of: Mapped[date] = mapped_column(Date, primary_key=True)
+    scoring_version: Mapped[str] = mapped_column(Text, primary_key=True)
+    dispersion: Mapped[Decimal | None] = mapped_column(Numeric)
+    usable_lenses: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 # --------------------------------------------------------------------------
@@ -107,7 +120,7 @@ def evaluate_lens(
     subscores: dict[str, float] = {}
 
     for spec in lens.metrics:
-        excluded = guards.check(spec.name, sector, metrics)
+        excluded = guards.check(spec, sector, metrics)
         raw = metrics.get(spec.name)
 
         if excluded is not None:
@@ -205,8 +218,10 @@ async def score_ticker(
 async def score_universe(session: AsyncSession, as_of: date) -> int:
     """Score every known security as of a date and persist. For the nightly job.
 
-    Returns the number of lens rows written. Re-running for the same date and
-    scoring_version overwrites in place, so the job is safe to retry.
+    Writes the lens scores and the derived dispersion figure together, so the
+    two can never describe different runs. Returns the number of lens rows
+    written (dispersion is one row per ticker on top). Re-running for the same
+    date and scoring_version overwrites in place, so the job is safe to retry.
     """
     securities = await all_securities(session)
     by_sector: dict[str, list[str]] = {}
@@ -224,6 +239,7 @@ async def score_universe(session: AsyncSession, as_of: date) -> int:
             for result in scores:
                 await _upsert(session, result)
                 written += 1
+            await _upsert_dispersion(session, ticker, as_of, scores)
     await session.flush()
     return written
 
@@ -250,6 +266,44 @@ async def _upsert(session: AsyncSession, result: LensScore) -> None:
             },
         )
     )
+
+
+async def _upsert_dispersion(
+    session: AsyncSession, ticker: str, as_of: date, scores: Sequence[LensScore]
+) -> None:
+    statement = insert(DispersionDaily).values(
+        ticker=ticker,
+        as_of=as_of,
+        scoring_version=SCORING_VERSION,
+        dispersion=dispersion(scores),
+        usable_lenses=len(usable_scores(scores)),
+    )
+    await session.execute(
+        statement.on_conflict_do_update(
+            index_elements=["ticker", "as_of", "scoring_version"],
+            set_={
+                "dispersion": statement.excluded.dispersion,
+                "usable_lenses": statement.excluded.usable_lenses,
+            },
+        )
+    )
+
+
+async def stored_dispersion(
+    session: AsyncSession,
+    ticker: str,
+    as_of: date,
+    scoring_version: str = SCORING_VERSION,
+) -> DispersionDaily | None:
+    return (
+        await session.execute(
+            select(DispersionDaily).where(
+                DispersionDaily.ticker == ticker,
+                DispersionDaily.as_of == as_of,
+                DispersionDaily.scoring_version == scoring_version,
+            )
+        )
+    ).scalar_one_or_none()
 
 
 async def stored_scores(
@@ -310,8 +364,10 @@ async def score_history(
 __all__ = [
     "LENSES",
     "LENS_BY_NAME",
+    "DispersionDaily",
     "LensScoreDaily",
     "dispersion",
+    "stored_dispersion",
     "evaluate_all",
     "evaluate_lens",
     "peer_values",

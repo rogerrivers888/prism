@@ -9,15 +9,28 @@ from app.db import get_session
 from app.fundamentals import sector_of
 from app.lenses.base import SCORING_VERSION, dispersion
 from app.lenses.engine import (
+    LENSES,
     LENS_BY_NAME,
     score_history,
     score_ticker,
+    stored_dispersion,
     stored_scores,
 )
 
 router = APIRouter(prefix="/lenses", tags=["lenses"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
+
+class BandOut(BaseModel):
+    lens: str
+    metric: str
+    higher_is_better: bool
+    description: str
+    ev_or_ebitda_derived: bool
+    # Ascending by value; scores interpolate linearly between breakpoints and
+    # clamp outside them.
+    breakpoints: list[tuple[float, float]]
 
 
 class LensScoreOut(BaseModel):
@@ -34,10 +47,11 @@ class LensScoresOut(BaseModel):
     scoring_version: str
     # Where the methodologies disagree. NULL below three usable lenses.
     dispersion: float | None
-    # False when nothing was stored for this date and the scores were
+    # False when nothing was stored for this date and the values were
     # computed on the fly, which is the normal case before the nightly job
     # has run. Computed results are not persisted by a read request.
     stored: bool
+    dispersion_stored: bool
     scores: list[LensScoreOut]
 
 
@@ -46,6 +60,28 @@ class LensHistoryPointOut(BaseModel):
     score: float | None
     coverage: float
     applicable: bool
+
+
+# DEV-ONLY: the absolute band tables are the least evidence-backed part of the
+# engine and are otherwise invisible outside the source. Exposed so they can be
+# reviewed and argued with. Remove once the bands are settled.
+#
+# Declared before /{ticker} on purpose: FastAPI matches routes in definition
+# order, so the reverse would make "bands" look like a ticker.
+@router.get("/bands", tags=["dev (temporary)"])
+async def get_bands() -> list[BandOut]:
+    return [
+        BandOut(
+            lens=lens.name,
+            metric=spec.name,
+            higher_is_better=spec.higher_is_better,
+            description=spec.description,
+            ev_or_ebitda_derived=spec.ev_or_ebitda_derived,
+            breakpoints=[(float(v), float(s)) for v, s in spec.bands],
+        )
+        for lens in LENSES
+        for spec in lens.metrics
+    ]
 
 
 @router.get("/{ticker}")
@@ -62,12 +98,22 @@ async def get_lens_scores(
     if not scores:
         scores = await score_ticker(session, ticker, as_of)
 
+    # Prefer the stored figure so the UI headline matches what the nightly job
+    # recorded, but fall back to computing it rather than showing nothing.
+    row = await stored_dispersion(session, ticker, as_of)
+    spread = (
+        float(row.dispersion)
+        if row is not None and row.dispersion is not None
+        else (None if row is not None else dispersion(scores))
+    )
+
     return LensScoresOut(
         ticker=ticker,
         as_of=as_of,
         scoring_version=SCORING_VERSION,
-        dispersion=dispersion(scores),
+        dispersion=spread,
         stored=stored,
+        dispersion_stored=row is not None,
         scores=[
             LensScoreOut(
                 lens=s.lens,

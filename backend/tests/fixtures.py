@@ -65,7 +65,9 @@ async def clean(session: AsyncSession) -> None:
     touched here.
     """
     await session.execute(
-        text("TRUNCATE securities, fundamentals, lens_scores_daily")
+        text(
+            "TRUNCATE securities, fundamentals, lens_scores_daily, dispersion_daily"
+        )
     )
 
 
