@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -61,6 +61,12 @@ class LensScoresOut(BaseModel):
     # has run. Computed results are not persisted by a read request.
     stored: bool
     dispersion_stored: bool
+    # When these scores were computed, and how many days ago. Lets a caller
+    # tell a fresh score from one left behind by a nightly run that has since
+    # stopped working — as_of alone cannot, since a stale row still carries
+    # today's date if it was written today and never refreshed since.
+    computed_at: datetime | None
+    stale_days: int | None
     scores: list[LensScoreOut]
 
 
@@ -129,10 +135,16 @@ async def get_lens_scores(
         else (None if row is not None else dispersion(scores))
     )
 
+    computed = [s.computed_at for s in scores if getattr(s, "computed_at", None)]
+    newest = max(computed) if computed else None
     return LensScoresOut(
         ticker=ticker,
         as_of=as_of,
         scoring_version=SCORING_VERSION,
+        computed_at=newest,
+        stale_days=(
+            None if newest is None else (datetime.now(UTC) - newest).days
+        ),
         dispersion=spread,
         stored=stored,
         dispersion_stored=row is not None,

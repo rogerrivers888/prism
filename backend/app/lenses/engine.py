@@ -6,11 +6,11 @@ so every scoring rule is unit-testable without a session.
 """
 
 from collections.abc import Mapping, Sequence
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from statistics import median
 
-from sqlalchemy import Boolean, Date, Integer, Numeric, Text, select
+from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, Text, select
 from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -68,6 +68,9 @@ class LensScoreDaily(Base):
     # Secondary reading: the same lens against declared bands only.
     score_absolute: Mapped[Decimal | None] = mapped_column(Numeric)
     relative_premium: Mapped[Decimal | None] = mapped_column(Numeric)
+    # Wall-clock time this row was written, so a reader can tell a fresh
+    # score from one left behind by a run that has since stopped working.
+    computed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class SectorLensDaily(Base):
@@ -377,6 +380,7 @@ async def _upsert(session: AsyncSession, result: LensScore) -> None:
         coverage=result.coverage,
         applicable=result.applicable,
         inputs=result.inputs,
+        computed_at=datetime.now(UTC),
     )
     await session.execute(
         statement.on_conflict_do_update(
@@ -388,6 +392,7 @@ async def _upsert(session: AsyncSession, result: LensScore) -> None:
                 "coverage": statement.excluded.coverage,
                 "applicable": statement.excluded.applicable,
                 "inputs": statement.excluded.inputs,
+                "computed_at": statement.excluded.computed_at,
             },
         )
     )
@@ -459,6 +464,7 @@ async def stored_scores(
             applicable=row.applicable,
             inputs=row.inputs,
             scoring_version=row.scoring_version,
+            computed_at=row.computed_at,
         )
         for row in rows
     ]

@@ -178,6 +178,8 @@ class LensScore:
     scoring_version: str = SCORING_VERSION
     # Same lens scored purely against the declared bands, ignoring peers.
     score_absolute: float | None = None
+    # When this score was actually computed (None until persisted).
+    computed_at: object | None = None
 
     @property
     def relative_premium(self) -> float | None:
