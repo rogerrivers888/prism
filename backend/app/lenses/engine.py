@@ -8,6 +8,7 @@ so every scoring rule is unit-testable without a session.
 from collections.abc import Mapping, Sequence
 from datetime import date
 from decimal import Decimal
+from statistics import median
 
 from sqlalchemy import Boolean, Date, Integer, Numeric, Text, select
 from sqlalchemy.dialects.postgresql import JSONB, insert
@@ -64,6 +65,29 @@ class LensScoreDaily(Base):
     coverage: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
     applicable: Mapped[bool] = mapped_column(Boolean, nullable=False)
     inputs: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    # Secondary reading: the same lens against declared bands only.
+    score_absolute: Mapped[Decimal | None] = mapped_column(Numeric)
+    relative_premium: Mapped[Decimal | None] = mapped_column(Numeric)
+
+
+class SectorLensDaily(Base):
+    """Median lens readings per sector per day.
+
+    The absolute median is the one that matters: peer percentiles are
+    normalised within a sector by construction, so they can never reveal that
+    the sector as a whole is stretched.
+    """
+
+    __tablename__ = "sector_lens_daily"
+
+    sector: Mapped[str] = mapped_column(Text, primary_key=True)
+    as_of: Mapped[date] = mapped_column(Date, primary_key=True)
+    lens: Mapped[str] = mapped_column(Text, primary_key=True)
+    scoring_version: Mapped[str] = mapped_column(Text, primary_key=True)
+    median_score: Mapped[Decimal | None] = mapped_column(Numeric)
+    median_score_absolute: Mapped[Decimal | None] = mapped_column(Numeric)
+    median_relative_premium: Mapped[Decimal | None] = mapped_column(Numeric)
+    member_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class DispersionDaily(Base):
@@ -122,6 +146,7 @@ def evaluate_lens(
 
     outcomes: dict[str, MetricOutcome] = {}
     subscores: dict[str, float] = {}
+    absolute_subscores: dict[str, float] = {}
 
     for spec in lens.metrics:
         excluded = guards.check(spec, sector, metrics)
@@ -144,6 +169,10 @@ def evaluate_lens(
             outcomes[spec.name] = MetricOutcome(excluded="not_available")
             continue
 
+        # The band reading is always computed, whether or not it is the one
+        # that counts, so both perspectives are on the record.
+        absolute = band_score(spec, raw)
+
         peer_values = list(peers.get(spec.name, ()))
         if len(peer_values) >= MIN_PEERS:
             subscore = percentile_score(spec, raw, peer_values)
@@ -151,25 +180,35 @@ def evaluate_lens(
         else:
             # Too few peers for a percentile to mean anything; fall back to
             # the lens's declared absolute bands.
-            subscore = band_score(spec, raw)
+            subscore = absolute
             method, peer_count = METHOD_BANDS, len(peer_values)
 
         outcomes[spec.name] = MetricOutcome(
-            value=raw, score=subscore, method=method, peer_count=peer_count
+            value=raw,
+            score=subscore,
+            score_absolute=absolute,
+            method=method,
+            peer_count=peer_count,
         )
         subscores[spec.name] = subscore
+        absolute_subscores[spec.name] = absolute
 
     # Only scored metrics count: a display-only metric must not be able to
     # dilute coverage by being absent, nor inflate it by being present.
     declared = len(lens.scored_metrics)
     coverage = len(subscores) / declared if declared else 0.0
-    score = lens.combine(subscores) if coverage >= MIN_COVERAGE and subscores else None
+    usable = coverage >= MIN_COVERAGE and subscores
+    score = lens.combine(subscores) if usable else None
+    # Same coverage rule governs both: a band reading built on two of five
+    # inputs is no more trustworthy than a peer reading on the same two.
+    score_absolute = lens.combine(absolute_subscores) if usable else None
 
     return LensScore(
         ticker=ticker,
         as_of=as_of,
         lens=lens.name,
         score=None if score is None else round(score, 4),
+        score_absolute=None if score_absolute is None else round(score_absolute, 4),
         coverage=round(coverage, 4),
         applicable=True,
         inputs={
@@ -268,16 +307,62 @@ async def score_universe(session: AsyncSession, as_of: date) -> int:
     for sector, tickers in by_sector.items():
         sector_metrics = await sector_metrics_as_of(session, tickers, as_of)
         peers = peer_values(sector_metrics)
+        by_lens: dict[str, list[LensScore]] = {}
         for ticker in tickers:
             scores = evaluate_all(
                 ticker, as_of, sector, sector_metrics.get(ticker, {}), peers
             )
             for result in scores:
                 await _upsert(session, result)
+                by_lens.setdefault(result.lens, []).append(result)
                 written += 1
             await _upsert_dispersion(session, ticker, as_of, scores)
+        await _upsert_sector_medians(session, sector, as_of, by_lens)
     await session.flush()
     return written
+
+
+def _median(values: Sequence[float]) -> float | None:
+    if not values:
+        return None
+    return round(median(values), 4)
+
+
+async def _upsert_sector_medians(
+    session: AsyncSession,
+    sector: str,
+    as_of: date,
+    by_lens: dict[str, list[LensScore]],
+) -> None:
+    for lens, results in by_lens.items():
+        usable = [r for r in results if r.applicable and r.score is not None]
+        columns = {
+            "median_score": _median([r.score for r in usable]),
+            "median_score_absolute": _median(
+                [r.score_absolute for r in usable if r.score_absolute is not None]
+            ),
+            "median_relative_premium": _median(
+                [
+                    r.relative_premium
+                    for r in usable
+                    if r.relative_premium is not None
+                ]
+            ),
+            "member_count": len(usable),
+        }
+        statement = insert(SectorLensDaily).values(
+            sector=sector,
+            as_of=as_of,
+            lens=lens,
+            scoring_version=SCORING_VERSION,
+            **columns,
+        )
+        await session.execute(
+            statement.on_conflict_do_update(
+                index_elements=["sector", "as_of", "lens", "scoring_version"],
+                set_=columns,
+            )
+        )
 
 
 async def _upsert(session: AsyncSession, result: LensScore) -> None:
@@ -287,6 +372,8 @@ async def _upsert(session: AsyncSession, result: LensScore) -> None:
         lens=result.lens,
         scoring_version=result.scoring_version,
         score=result.score,
+        score_absolute=result.score_absolute,
+        relative_premium=result.relative_premium,
         coverage=result.coverage,
         applicable=result.applicable,
         inputs=result.inputs,
@@ -296,6 +383,8 @@ async def _upsert(session: AsyncSession, result: LensScore) -> None:
             index_elements=["ticker", "as_of", "lens", "scoring_version"],
             set_={
                 "score": statement.excluded.score,
+                "score_absolute": statement.excluded.score_absolute,
+                "relative_premium": statement.excluded.relative_premium,
                 "coverage": statement.excluded.coverage,
                 "applicable": statement.excluded.applicable,
                 "inputs": statement.excluded.inputs,
@@ -363,6 +452,9 @@ async def stored_scores(
             as_of=row.as_of,
             lens=row.lens,
             score=None if row.score is None else float(row.score),
+            score_absolute=(
+                None if row.score_absolute is None else float(row.score_absolute)
+            ),
             coverage=float(row.coverage),
             applicable=row.applicable,
             inputs=row.inputs,
@@ -402,6 +494,7 @@ __all__ = [
     "LENS_BY_NAME",
     "DispersionDaily",
     "LensScoreDaily",
+    "SectorLensDaily",
     "dispersion",
     "stored_dispersion",
     "evaluate_all",
@@ -412,3 +505,22 @@ __all__ = [
     "score_universe",
     "stored_scores",
 ]
+
+
+async def sector_medians(
+    session: AsyncSession,
+    sector: str,
+    as_of: date,
+    scoring_version: str = SCORING_VERSION,
+) -> list[SectorLensDaily]:
+    return list(
+        (
+            await session.execute(
+                select(SectorLensDaily).where(
+                    SectorLensDaily.sector == sector,
+                    SectorLensDaily.as_of == as_of,
+                    SectorLensDaily.scoring_version == scoring_version,
+                )
+            )
+        ).scalars()
+    )

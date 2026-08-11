@@ -173,7 +173,14 @@ def test_missing_filing_date_is_estimated_with_a_documented_lag():
 def test_sector_mapping_prefers_industry_and_refuses_to_guess():
     assert map_sector("Technology", "Semiconductors") == "semiconductors"
     assert map_sector("Technology", "Computer Hardware") == "hardware"
-    assert map_sector("Financial Services", "Banks—Regional") == "banks"
+    # EODHD writes a spaced hyphen, not an em-dash. An earlier guess used the
+    # em-dash, so every financial fell through to the coarse sector instead.
+    assert map_sector("Financial Services", "Banks - Regional") == "banks"
+    assert map_sector("Financial Services", "Insurance - Life") == "insurance"
+    # Instrument makers own plant and inventory. Falling through "Technology"
+    # to software marked them asset-light and wrongly excluded their P/B.
+    assert map_sector("Technology", "Scientific & Technical Instruments") == "hardware"
+    assert map_sector("Consumer Cyclical", "Packaging & Containers") == "materials"
     # Unknown industry falls back to the coarse sector...
     assert map_sector("Utilities", "Something New") == "utilities"
     # ...but a wholly unknown pair raises rather than being bucketed.
@@ -329,21 +336,51 @@ async def test_securities_are_idempotent(session, provider, budget, clean_ingest
     assert len(count) == 1
 
 
-async def test_api_key_never_appears_in_an_error_message():
-    # httpx puts the full URL — including the api_token query parameter — in
-    # its error messages, which would write the credential into the logs.
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(404, text="not found")
+KEY = "SUPERSECRETKEY"
 
-    leaky = EODHDProvider(
-        "SUPERSECRETKEY",
-        client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+
+def _leaky_provider(handler, **kwargs):
+    return EODHDProvider(
+        KEY, client=httpx.AsyncClient(transport=httpx.MockTransport(handler)), **kwargs
+    )
+
+
+@pytest.mark.parametrize(
+    "name,handler",
+    [
+        # httpx puts the full URL — api_token included — into HTTPStatusError.
+        ("client_error", lambda r: httpx.Response(404, text="not found")),
+        ("auth_error", lambda r: httpx.Response(401, text="unauthorized")),
+        # A body that is not JSON: the decode error can quote the request too.
+        ("bad_json", lambda r: httpx.Response(200, text="<html>nope</html>")),
+    ],
+)
+async def test_api_key_never_leaks_on_any_error_path(name, handler):
+    provider = _leaky_provider(handler)
+    with pytest.raises(Exception) as caught:
+        await provider.fetch_fundamentals("NOPE.US")
+    assert KEY not in str(caught.value), f"{name} leaked the API key"
+    assert KEY not in repr(caught.value), f"{name} leaked the API key in repr"
+
+
+async def test_api_key_never_leaks_on_transport_failure():
+    # Connection-level failures carry the request, and therefore the URL.
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError(f"failed connecting to {request.url}", request=request)
+
+    provider = _leaky_provider(handler)
+    with pytest.raises(Exception) as caught:
+        await provider.fetch_prices("NOPE.US")
+    assert KEY not in str(caught.value)
+
+
+async def test_api_key_never_leaks_when_retries_are_exhausted():
+    provider = _leaky_provider(
+        lambda r: httpx.Response(502, text="Bad Gateway"), max_retries=2
     )
     with pytest.raises(Exception) as caught:
-        await leaky.fetch_fundamentals("NOPE.US")
-
-    assert "SUPERSECRETKEY" not in str(caught.value)
-    assert "***" in str(caught.value)
+        await provider.fetch_dividends("NOPE.US")
+    assert KEY not in str(caught.value)
 
 
 async def test_transient_server_errors_are_retried(session):

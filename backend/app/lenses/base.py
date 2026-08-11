@@ -145,11 +145,18 @@ class MetricOutcome:
     peer_count: int | None = None
     excluded: str | None = None
     scored: bool = True
+    # The band reading, always computed even when the percentile is the one
+    # that counts. "Cheap for a semiconductor" and "expensive outright" are
+    # both true statements and the gap between them is itself information.
+    score_absolute: float | None = None
 
     def as_dict(self) -> dict:
         return {
             "value": self.value,
             "score": None if self.score is None else round(self.score, 4),
+            "score_absolute": (
+                None if self.score_absolute is None else round(self.score_absolute, 4)
+            ),
             "method": self.method,
             "peer_count": self.peer_count,
             "excluded": self.excluded,
@@ -169,6 +176,24 @@ class LensScore:
     applicable: bool
     inputs: dict = field(default_factory=dict)
     scoring_version: str = SCORING_VERSION
+    # Same lens scored purely against the declared bands, ignoring peers.
+    score_absolute: float | None = None
+
+    @property
+    def relative_premium(self) -> float | None:
+        """How much better this looks against peers than in absolute terms.
+
+        Large positive on value means cheap-within-an-expensive-sector — the
+        classic cyclical-peak trap, where a stock screens well only because
+        everything around it screens worse. Large negative is the opposite:
+        cheap outright but expensive against peers.
+
+        Zero whenever the headline score already came from the bands, since
+        then the two readings are the same number.
+        """
+        if self.score is None or self.score_absolute is None:
+            return None
+        return round(self.score - self.score_absolute, 4)
 
 
 def usable_scores(scores: Sequence[LensScore]) -> list[float]:

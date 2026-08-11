@@ -286,3 +286,59 @@ async def test_score_universe_persists_and_is_rerunnable(session):
     await session.commit()
     assert again == 12
     assert len(await stored_scores(session, "AAA", as_of)) == 6
+
+
+async def test_both_readings_are_stored_and_headline_stays_peer_relative(session):
+    """Peer-relative remains primary; the band reading rides alongside."""
+    await fixtures.add_sector(session, "semiconductors", 10, prefix="SEM")
+    await session.flush()
+    as_of = date(2026, 6, 30)
+
+    await score_universe(session, as_of)
+    await session.commit()
+
+    value = _lens(await stored_scores(session, "SEM00", as_of), "value")
+    assert value.score is not None and value.score_absolute is not None
+    # Percentiles engaged, so the two readings are genuinely different views.
+    assert value.inputs["metrics"]["pe_ratio"]["method"] == "peer_percentile"
+    assert value.inputs["metrics"]["pe_ratio"]["score_absolute"] is not None
+    assert value.relative_premium == pytest.approx(
+        value.score - value.score_absolute, abs=1e-3
+    )
+
+
+async def test_absolute_reading_matches_headline_when_bands_were_used(session):
+    # Too few peers, so `score` came from the bands — the two readings are
+    # then the same number and the premium is zero, not spurious noise.
+    await fixtures.add_sector(session, "utilities", 4, prefix="UTS")
+    await session.flush()
+    as_of = date(2026, 6, 30)
+
+    await score_universe(session, as_of)
+    await session.commit()
+
+    value = _lens(await stored_scores(session, "UTS00", as_of), "value")
+    assert value.inputs["metrics"]["pe_ratio"]["method"] == "absolute_bands"
+    assert value.score == pytest.approx(value.score_absolute)
+    assert value.relative_premium == pytest.approx(0.0)
+
+
+async def test_sector_medians_are_stored_per_lens(session):
+    from app.lenses.engine import sector_medians
+
+    await fixtures.add_sector(session, "semiconductors", 9, prefix="SMD")
+    await session.flush()
+    as_of = date(2026, 6, 30)
+
+    await score_universe(session, as_of)
+    await session.commit()
+
+    rows = {r.lens: r for r in await sector_medians(session, "semiconductors", as_of)}
+    assert set(rows) == {lens.name for lens in LENSES}
+    value = rows["value"]
+    assert value.member_count == 9
+    assert value.median_score is not None
+    # The absolute median is the point: percentiles are normalised within the
+    # sector, so their median is ~50 by construction and says nothing about
+    # whether the sector itself is stretched.
+    assert value.median_score_absolute is not None

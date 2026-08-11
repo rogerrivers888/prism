@@ -132,34 +132,46 @@ class EODHDProvider:
         owned = self._client is None
         query = {"api_token": self._api_key, "fmt": "json", **params}
         try:
-            delay = 1.0
-            for attempt in range(self._max_retries):
-                response = await client.get(f"{BASE_URL}{path}", params=query)
-                # 429 is rate limiting; 5xx from this provider is routinely a
-                # transient gateway blip and succeeds on a retry.
-                if response.status_code == 429 or response.status_code >= 500:
-                    logger.warning(
-                        "eodhd %s on %s, backing off %.1fs (attempt %d/%d)",
-                        response.status_code,
-                        path,
-                        delay,
-                        attempt + 1,
-                        self._max_retries,
-                    )
-                    await asyncio.sleep(delay)
-                    delay *= 2
-                    continue
-                try:
-                    response.raise_for_status()
-                except httpx.HTTPStatusError as exc:
-                    raise RuntimeError(self._redact(str(exc))) from None
-                return response.json()
-            raise RuntimeError(
-                f"eodhd did not recover on {path} after {self._max_retries} attempts"
-            )
+            return await self._request(client, path, query)
+        except Exception as exc:
+            # Belt and braces over the targeted redaction below: any exception
+            # escaping this call — httpx status errors, transport errors, JSON
+            # decode failures, anything added later — is checked before it can
+            # reach a log. The URL carries the token as a query parameter, so
+            # leaking it is the default unless something stops it.
+            message = str(exc)
+            if self._api_key and self._api_key in message:
+                raise RuntimeError(self._redact(message)) from None
+            raise
         finally:
             if owned:
                 await client.aclose()
+
+    async def _request(
+        self, client: httpx.AsyncClient, path: str, query: dict
+    ) -> object:
+        delay = 1.0
+        for attempt in range(self._max_retries):
+            response = await client.get(f"{BASE_URL}{path}", params=query)
+            # 429 is rate limiting; 5xx from this provider is routinely a
+            # transient gateway blip and succeeds on a retry.
+            if response.status_code == 429 or response.status_code >= 500:
+                logger.warning(
+                    "eodhd %s on %s, backing off %.1fs (attempt %d/%d)",
+                    response.status_code,
+                    path,
+                    delay,
+                    attempt + 1,
+                    self._max_retries,
+                )
+                await asyncio.sleep(delay)
+                delay *= 2
+                continue
+            response.raise_for_status()
+            return response.json()
+        raise RuntimeError(
+            f"eodhd did not recover on {path} after {self._max_retries} attempts"
+        )
 
     async def fetch_security(self, ticker: str) -> FetchResult:
         # Security metadata lives inside the fundamentals payload, so this is

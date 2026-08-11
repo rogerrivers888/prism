@@ -13,6 +13,7 @@ from app.lenses.engine import (
     LENS_BY_NAME,
     score_history,
     score_ticker,
+    sector_medians,
     stored_dispersion,
     stored_scores,
 )
@@ -37,7 +38,13 @@ class BandOut(BaseModel):
 
 class LensScoreOut(BaseModel):
     lens: str
+    # Peer-relative, and the headline. Unchanged by the absolute reading.
     score: float | None
+    # The same lens against declared bands only, ignoring peers.
+    score_absolute: float | None
+    # score - score_absolute. Positive on value = cheap within an expensive
+    # sector, which is the cyclical-peak trap.
+    relative_premium: float | None
     coverage: float
     applicable: bool
     inputs: dict
@@ -60,8 +67,20 @@ class LensScoresOut(BaseModel):
 class LensHistoryPointOut(BaseModel):
     as_of: date
     score: float | None
+    score_absolute: float | None
     coverage: float
     applicable: bool
+
+
+class SectorLensOut(BaseModel):
+    sector: str
+    lens: str
+    median_score: float | None
+    # The sector screen reads this: a low median absolute value score means
+    # the whole sector is richly priced, which percentiles cannot reveal.
+    median_score_absolute: float | None
+    median_relative_premium: float | None
+    member_count: int
 
 
 # DEV-ONLY: the absolute band tables are the least evidence-backed part of the
@@ -121,6 +140,8 @@ async def get_lens_scores(
             LensScoreOut(
                 lens=s.lens,
                 score=s.score,
+                score_absolute=s.score_absolute,
+                relative_premium=s.relative_premium,
                 coverage=s.coverage,
                 applicable=s.applicable,
                 inputs=s.inputs,
@@ -148,8 +169,43 @@ async def get_lens_history(
         LensHistoryPointOut(
             as_of=row.as_of,
             score=None if row.score is None else float(row.score),
+            score_absolute=(
+                None if row.score_absolute is None else float(row.score_absolute)
+            ),
             coverage=float(row.coverage),
             applicable=row.applicable,
         )
         for row in rows
+    ]
+
+
+@router.get("/sectors/{sector}")
+async def get_sector_lenses(
+    sector: str, session: SessionDep, as_of: date | None = None
+) -> list[SectorLensOut]:
+    """Median lens readings for a whole sector on a date."""
+    as_of = as_of or date.today()
+    rows = await sector_medians(session, sector, as_of)
+    if not rows:
+        raise HTTPException(
+            status_code=404, detail=f"no sector scores for {sector} on {as_of}"
+        )
+    return [
+        SectorLensOut(
+            sector=row.sector,
+            lens=row.lens,
+            median_score=None if row.median_score is None else float(row.median_score),
+            median_score_absolute=(
+                None
+                if row.median_score_absolute is None
+                else float(row.median_score_absolute)
+            ),
+            median_relative_premium=(
+                None
+                if row.median_relative_premium is None
+                else float(row.median_relative_premium)
+            ),
+            member_count=row.member_count,
+        )
+        for row in sorted(rows, key=lambda r: r.lens)
     ]
