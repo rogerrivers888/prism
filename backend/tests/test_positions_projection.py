@@ -10,19 +10,22 @@ from app.projections import catch_up, get_position, rebuild
 NOW = datetime(2026, 8, 11, 9, 0, 0, tzinfo=UTC)
 
 
-async def _trade(session, stream_id, quantity, price, side="buy", **kw):
+async def _trade(session, stream_id, quantity, price, side="buy", stop=None, **kw):
+    payload = {
+        "instrument": "GOLD",
+        "instrument_type": "spreadbet",
+        "side": side,
+        "quantity": quantity,
+        "price": price,
+    }
+    if stop is not None:
+        payload["stop"] = stop
     return await append(
         session,
         stream_id=stream_id,
         stream_type="position",
         event_type="TradeExecuted",
-        payload={
-            "instrument": "GOLD",
-            "instrument_type": "spreadbet",
-            "side": side,
-            "quantity": quantity,
-            "price": price,
-        },
+        payload=payload,
         occurred_at=NOW,
         actor="roger",
         **kw,
@@ -41,6 +44,18 @@ async def _stop(session, stream_id, new_stop):
     )
 
 
+async def _void(session, stream_id, reason="test void"):
+    return await append(
+        session,
+        stream_id=stream_id,
+        stream_type="position",
+        event_type="StreamVoided",
+        payload={"reason": reason},
+        occurred_at=NOW,
+        actor="roger",
+    )
+
+
 def _snapshot(position) -> dict:
     return {
         "stream_id": position.stream_id,
@@ -51,6 +66,7 @@ def _snapshot(position) -> dict:
         "entry_price": position.entry_price,
         "current_stop": position.current_stop,
         "initial_risk": position.initial_risk,
+        "current_risk": position.current_risk,
         "currency": position.currency,
         "opened_at": position.opened_at,
         "closed_at": position.closed_at,
@@ -75,32 +91,47 @@ async def test_two_trades_on_one_stream_aggregate(session):
     assert position.entry_price == Decimal("105")  # weighted average
 
 
-async def test_stop_moved_updates_stop_but_initial_risk_is_frozen(session):
+async def test_initial_risk_set_once_at_entry_and_never_recalculated(session):
     stream_id = uuid.uuid4()
-    await _trade(session, stream_id, "10", "100")
-    await _stop(session, stream_id, "90")  # sets R: |100-90| * 10 = 100
+    # Opening trade carries the stop: R = |100 - 90| * 10 = 100.
+    await _trade(session, stream_id, "10", "100", stop="90")
     await catch_up(session)
     await session.commit()
 
     position = await get_position(session, stream_id)
     assert position.current_stop == Decimal("90")
     assert position.initial_risk == Decimal("100")
+    assert position.current_risk == Decimal("100")
 
-    # Trailing the stop into profit updates current_stop only; R was
-    # defined at entry and must not change.
-    await _stop(session, stream_id, "105")
+    # Any later stop move updates current_stop and current_risk only —
+    # R was defined at entry and must not drift.
+    await _stop(session, stream_id, "95")
     await catch_up(session)
     await session.commit()
     session.expire_all()
 
     position = await get_position(session, stream_id)
-    assert position.current_stop == Decimal("105")
+    assert position.current_stop == Decimal("95")
+    assert position.current_risk == Decimal("50")
     assert position.initial_risk == Decimal("100")
+
+
+async def test_no_stop_at_entry_means_initial_risk_stays_null(session):
+    stream_id = uuid.uuid4()
+    await _trade(session, stream_id, "10", "100")  # no stop: R is unknowable
+    await _stop(session, stream_id, "90")
+    await catch_up(session)
+    await session.commit()
+
+    position = await get_position(session, stream_id)
+    assert position.initial_risk is None  # never faked after the fact
+    assert position.current_stop == Decimal("90")
+    assert position.current_risk == Decimal("100")
 
 
 async def test_catch_up_is_idempotent(session):
     stream_id = uuid.uuid4()
-    await _trade(session, stream_id, "10", "100")
+    await _trade(session, stream_id, "10", "100", stop="92")
     await _stop(session, stream_id, "95")
     first = await catch_up(session)
     await session.commit()
@@ -117,8 +148,8 @@ async def test_catch_up_is_idempotent(session):
 
 async def test_rebuild_matches_incremental(session):
     stream_id = uuid.uuid4()
-    await _trade(session, stream_id, "10", "100")
-    await _stop(session, stream_id, "92")
+    await _trade(session, stream_id, "10", "100", stop="92")
+    await _stop(session, stream_id, "96")
     await _trade(session, stream_id, "5", "104")
     await catch_up(session)
     await session.commit()
@@ -130,6 +161,36 @@ async def test_rebuild_matches_incremental(session):
     session.expire_all()
 
     assert _snapshot(await get_position(session, stream_id)) == incremental
+
+
+async def test_voided_stream_produces_no_position(session):
+    # Void after projection: the position row is removed.
+    voided_late = uuid.uuid4()
+    await _trade(session, voided_late, "10", "100")
+    await catch_up(session)
+    await session.commit()
+    assert await get_position(session, voided_late) is not None
+
+    await _void(session, voided_late)
+    await catch_up(session)
+    await session.commit()
+    session.expire_all()
+    assert await get_position(session, voided_late) is None
+
+    # Void already in the log before catch-up: the position never appears,
+    # and a rebuild agrees.
+    voided_early = uuid.uuid4()
+    await _trade(session, voided_early, "10", "100")
+    await _void(session, voided_early)
+    await catch_up(session)
+    await session.commit()
+    assert await get_position(session, voided_early) is None
+
+    await rebuild(session)
+    await session.commit()
+    session.expire_all()
+    assert await get_position(session, voided_late) is None
+    assert await get_position(session, voided_early) is None
 
 
 async def test_unknown_event_type_is_skipped_without_error(session):

@@ -26,6 +26,7 @@ class PositionOut(BaseModel):
     entry_price: Decimal
     current_stop: Decimal | None
     initial_risk: Decimal | None
+    current_risk: Decimal | None
     currency: str
     opened_at: datetime
     closed_at: datetime | None

@@ -24,6 +24,9 @@ class TradeExecuted(_Payload):
     quantity: Decimal
     price: Decimal
     currency: str = "GBP"
+    # Stop attached to the order, if any. On the opening trade this is the
+    # only place initial_risk (R) can come from — R is defined at entry.
+    stop: Decimal | None = None
 
 
 class StopMoved(_Payload):
@@ -33,8 +36,19 @@ class StopMoved(_Payload):
     new_stop: Decimal
 
 
+class StreamVoided(_Payload):
+    """Supersedes an entire stream — e.g. events too malformed to project.
+
+    The ledger is append-only, so bad history is never edited or deleted;
+    it is voided by a later event that says so, and why.
+    """
+
+    event_type: Literal["StreamVoided"] = "StreamVoided"
+    reason: str
+
+
 EventPayload = Annotated[
-    Union[TradeExecuted, StopMoved],
+    Union[TradeExecuted, StopMoved, StreamVoided],
     Field(discriminator="event_type"),
 ]
 
