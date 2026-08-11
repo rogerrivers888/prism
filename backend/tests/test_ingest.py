@@ -329,6 +329,42 @@ async def test_securities_are_idempotent(session, provider, budget, clean_ingest
     assert len(count) == 1
 
 
+async def test_api_key_never_appears_in_an_error_message():
+    # httpx puts the full URL — including the api_token query parameter — in
+    # its error messages, which would write the credential into the logs.
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, text="not found")
+
+    leaky = EODHDProvider(
+        "SUPERSECRETKEY",
+        client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+    )
+    with pytest.raises(Exception) as caught:
+        await leaky.fetch_fundamentals("NOPE.US")
+
+    assert "SUPERSECRETKEY" not in str(caught.value)
+    assert "***" in str(caught.value)
+
+
+async def test_transient_server_errors_are_retried(session):
+    # The provider returns sporadic 502s on /div; one blip must not cost a
+    # ticker its whole ingest.
+    attempts = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        attempts.append(1)
+        if len(attempts) < 3:
+            return httpx.Response(502, text="Bad Gateway")
+        return httpx.Response(200, json=DIVIDENDS)
+
+    flaky = EODHDProvider(
+        "k", client=httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    )
+    result = await flaky.fetch_dividends("TEST.US")
+    assert len(attempts) == 3
+    assert isinstance(result.payload, list)
+
+
 async def test_dividends_use_declaration_date_when_given(session, provider, budget, clean_ingest):
     await sync_dividends(session, provider, budget, "TEST.US")
     await session.commit()

@@ -114,8 +114,20 @@ class EODHDProvider:
 
     # ------------------------------------------------------------------ fetch
 
+    def _redact(self, text: str) -> str:
+        """Strip the API key out of anything that might be logged or raised.
+
+        httpx puts the full request URL in its error messages, and the token
+        is a query parameter — so an unhandled error would otherwise write the
+        credential straight into the logs.
+        """
+        return text.replace(self._api_key, "***") if self._api_key else text
+
     async def _get(self, path: str, **params: object) -> object:
-        """GET with exponential backoff on 429. Never logs the API key."""
+        """GET with exponential backoff on 429 and transient 5xx.
+
+        The API key never appears in a log line or an exception message.
+        """
         client = self._client or httpx.AsyncClient(timeout=120)
         owned = self._client is None
         query = {"api_token": self._api_key, "fmt": "json", **params}
@@ -123,9 +135,12 @@ class EODHDProvider:
             delay = 1.0
             for attempt in range(self._max_retries):
                 response = await client.get(f"{BASE_URL}{path}", params=query)
-                if response.status_code == 429:
+                # 429 is rate limiting; 5xx from this provider is routinely a
+                # transient gateway blip and succeeds on a retry.
+                if response.status_code == 429 or response.status_code >= 500:
                     logger.warning(
-                        "eodhd rate limited on %s, backing off %.1fs (attempt %d/%d)",
+                        "eodhd %s on %s, backing off %.1fs (attempt %d/%d)",
+                        response.status_code,
                         path,
                         delay,
                         attempt + 1,
@@ -134,9 +149,14 @@ class EODHDProvider:
                     await asyncio.sleep(delay)
                     delay *= 2
                     continue
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    raise RuntimeError(self._redact(str(exc))) from None
                 return response.json()
-            raise RuntimeError(f"eodhd still rate limiting {path} after retries")
+            raise RuntimeError(
+                f"eodhd did not recover on {path} after {self._max_retries} attempts"
+            )
         finally:
             if owned:
                 await client.aclose()

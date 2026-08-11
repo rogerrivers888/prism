@@ -15,7 +15,14 @@ config = context.config
 
 # Take the database URL from the application settings (env var DATABASE_URL),
 # never from alembic.ini. Escape "%" for configparser interpolation.
-config.set_main_option("sqlalchemy.url", settings.async_database_url.replace("%", "%%"))
+#
+# A caller driving alembic programmatically (the test harness, which migrates
+# a throwaway database) may set the URL first; that explicit choice wins, or
+# it would be silently redirected at the development database.
+if not config.get_main_option("sqlalchemy.url", None):
+    config.set_main_option(
+        "sqlalchemy.url", settings.async_database_url.replace("%", "%%")
+    )
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

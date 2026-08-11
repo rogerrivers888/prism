@@ -154,7 +154,12 @@ async def sync_universe(
                 logger.warning("ingest failed for %s: %s", ticker, error)
                 continue
             try:
-                await _persist(session, provider, ticker, payloads, report)
+                # Each ticker persists inside its own savepoint, so one
+                # failure rolls back that ticker alone. A plain rollback here
+                # would discard every sibling in the chunk that had already
+                # been written but not yet committed.
+                async with session.begin_nested():
+                    await _persist(session, provider, ticker, payloads, report)
                 await budget.spend(calls_each)
                 report.calls_spent += calls_each
                 report.ingested += 1
@@ -163,11 +168,9 @@ async def sync_universe(
                 # unknown industry string must not discard the whole batch.
                 report.unmapped_sectors[str(exc)] += 1
                 report.unmapped_examples.setdefault(str(exc), ticker)
-                await session.rollback()
                 logger.warning("unmapped sector for %s: %s", ticker, exc)
             except Exception as exc:  # noqa: BLE001
                 report.failed[ticker] = f"persist {type(exc).__name__}: {exc}"
-                await session.rollback()
                 logger.warning("persist failed for %s: %s", ticker, exc)
 
         await session.commit()
