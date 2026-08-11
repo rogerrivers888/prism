@@ -87,3 +87,24 @@ async def test_run_history_is_ordered_newest_first(session):
 
     history = await runs.latest(session, job=JOB_NAME, limit=3)
     assert [r.run_date for r in history] == [RUN_DATE, date(2026, 8, 11), date(2026, 8, 10)]
+
+
+@pytest.mark.parametrize(
+    "symbol,exchange,expected",
+    [
+        ("MU", "NASDAQ", "MU.US"),
+        ("JPM", "NYSE", "JPM.US"),
+        ("XYZ", "BATS", "XYZ.US"),
+        ("VLX", "LSE", "VLX.LSE"),
+        ("IFX", "XETRA", "IFX.XETRA"),
+        ("005930", "KO", "005930.KO"),
+        # A venue we have never seen is addressed by its own code rather
+        # than silently defaulting to .US and 404ing every night.
+        ("7203", "TSE", "7203.TSE"),
+        ("ABC", None, "ABC.US"),
+    ],
+)
+def test_provider_ticker_routing(symbol, exchange, expected):
+    from app.ingest.universe import provider_ticker
+
+    assert provider_ticker(symbol, exchange) == expected

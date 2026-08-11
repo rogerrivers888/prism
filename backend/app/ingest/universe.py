@@ -40,6 +40,25 @@ SP500_INDEX = "GSPC.INDX"
 NASDAQ100_INDEX = "NDX.INDX"
 
 
+# Venues EODHD addresses with the .US suffix rather than their own code.
+US_VENUES = frozenset(
+    {"NYSE", "NASDAQ", "NYSE ARCA", "NYSE MKT", "BATS", "AMEX", "OTC", "OTCMKTS", "NYSE American"}
+)
+
+
+def provider_ticker(symbol: str, exchange: str | None) -> str:
+    """Bare symbol plus the routing suffix the provider expects.
+
+    Storage keys on the bare symbol; the suffix is provider addressing. US
+    venues all resolve to .US, and every other exchange is addressed by its
+    own code — so a venue we have never seen routes correctly rather than
+    silently defaulting to .US and 404ing.
+    """
+    if not exchange or exchange in US_VENUES:
+        return f"{symbol}.US"
+    return f"{symbol}.{exchange}"
+
+
 def components_from_index(payload: object, suffix: str = "US") -> list[str]:
     """Extract provider tickers from an index fundamentals payload."""
     if not isinstance(payload, dict):
@@ -55,11 +74,7 @@ def components_from_index(payload: object, suffix: str = "US") -> list[str]:
         code = entry.get("Code")
         if not code:
             continue
-        exchange = entry.get("Exchange") or suffix
-        # EODHD reports US listings under their venue (NYSE/NASDAQ) but
-        # addresses them with the .US suffix.
-        routing = "US" if exchange in ("NYSE", "NASDAQ", "NYSE ARCA", "BATS") else exchange
-        tickers.append(f"{code}.{routing}")
+        tickers.append(provider_ticker(code, entry.get("Exchange") or suffix))
     return tickers
 
 

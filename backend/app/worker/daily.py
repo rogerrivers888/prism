@@ -34,6 +34,7 @@ from app.ingest.jobs import _upsert_fundamentals, _upsert_security, bare
 from app.ingest.mapping import UnmappedSector
 from app.ingest.protocol import MarketDataProvider
 from app.ingest.runner import _insert_prices
+from app.ingest.universe import provider_ticker
 from app.lenses.engine import score_universe
 from app.projections import catch_up
 from app.worker import runs
@@ -128,13 +129,8 @@ async def run(session, provider: MarketDataProvider, run_date: date) -> runs.Run
     if done:
         tally.notes.append(f"resumed, {len(done)} tickers already done today")
 
-    # Provider tickers need their routing suffix back; storage keys on the
-    # bare symbol. LSE and other venues are not all .US.
     def routed(security: Security) -> str:
-        suffix = {"LSE": "LSE", "XETRA": "XETRA", "KO": "KO", "TSE": "TSE"}.get(
-            security.exchange or "", "US"
-        )
-        return f"{security.ticker}.{suffix}"
+        return provider_ticker(security.ticker, security.exchange)
 
     semaphore = asyncio.Semaphore(CONCURRENCY)
 
