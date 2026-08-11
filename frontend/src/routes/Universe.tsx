@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { API_BASE_URL, API_BASE_URL_IS_DEFAULT } from "../api/config";
 import { LENSES, useUniverse, type LensName } from "../api/universe";
 import { LensBar, LensStrip } from "../components/LensBar";
 import { StalenessBanner } from "../components/StalenessBanner";
@@ -66,9 +67,19 @@ export function Universe() {
   };
 
   if (error) {
+    // Name the URL that failed. Without it, a build pointed at the wrong
+    // backend looks identical to a backend that is down.
     return (
-      <div className="p-6 text-negative" role="alert">
-        Could not load the universe: {(error as Error).message}
+      <div className="p-6" role="alert">
+        <p className="text-negative">
+          Could not load the universe: {(error as Error).message}
+        </p>
+        <p className="mt-2 text-sm text-text-muted">
+          Tried <code className="tabular">{API_BASE_URL}</code>
+          {API_BASE_URL_IS_DEFAULT
+            ? " (the built-in default — VITE_API_BASE_URL was not set at build time)"
+            : " (from VITE_API_BASE_URL)"}
+        </p>
       </div>
     );
   }

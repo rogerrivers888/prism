@@ -26,6 +26,27 @@ Run `api:types` after any backend change to the response shapes: the types are
 generated, not hand-written, so a breaking change surfaces as a type error
 rather than at runtime.
 
+## Deployment
+
+Railpack builds a Node image from `package.json`, so the container has Node and
+nothing else — no Caddy, no nginx. `dist/` is served by `serve`, which is a
+runtime dependency for exactly that reason:
+
+```
+npx serve -s dist -l $PORT
+```
+
+`-s` rewrites unknown paths to `index.html`, so client-side routes resolve
+instead of 404ing.
+
+**`VITE_API_BASE_URL` is read at BUILD time, not runtime.** Vite inlines it
+into the bundle, so setting it on a running service has no effect — it must be
+present when `npm run build` runs. Railway exposes service variables to the
+build step, so setting it on the service is enough, but a change to it requires
+a rebuild, not just a restart. Unset, the app falls back to the deployed API
+and says so in the console; if a request then fails, the error names the URL it
+tried.
+
 ## Colour
 
 All colour is CSS custom properties in OKLCH, with a light and a dark set in
