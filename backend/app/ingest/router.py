@@ -12,6 +12,7 @@ from app.ingest.budget import BudgetExceeded, CallBudget
 from app.ingest.eodhd import EODHDProvider
 from app.ingest.jobs import (
     SEED_UNIVERSE,
+    sync_dividends,
     sync_fundamentals,
     sync_prices,
     sync_securities,
@@ -78,6 +79,22 @@ async def ingest_prices(
         result = await sync_prices(
             session, _provider(), _budget(session), ticker,
             from_date=from_date, dry_run=dry_run, force=force,
+        )
+    except BudgetExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+    if not dry_run:
+        await session.commit()
+    return result.as_dict()
+
+
+@router.post("/dividends/{ticker}")
+async def ingest_dividends(
+    ticker: str, session: SessionDep, dry_run: DryRun = False, force: bool = False
+) -> dict:
+    try:
+        result = await sync_dividends(
+            session, _provider(), _budget(session), ticker,
+            dry_run=dry_run, force=force,
         )
     except BudgetExceeded as exc:
         raise HTTPException(status_code=429, detail=str(exc))

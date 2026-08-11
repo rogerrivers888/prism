@@ -18,6 +18,7 @@ import httpx
 
 from app.ingest.mapping import map_sector
 from app.ingest.protocol import (
+    ConsensusRow,
     FetchResult,
     FundamentalRow,
     PriceBar,
@@ -150,6 +151,10 @@ class EODHDProvider:
         payload = await self._get(f"/fundamentals/{ticker}")
         return FetchResult(endpoint="fundamentals", payload=payload, calls=1)
 
+    async def fetch_dividends(self, ticker: str) -> FetchResult:
+        payload = await self._get(f"/div/{ticker}", **{"from": "1980-01-01"})
+        return FetchResult(endpoint="div", payload=payload, calls=1)
+
     async def fetch_prices(
         self, ticker: str, from_date: date | None = None
     ) -> FetchResult:
@@ -174,10 +179,27 @@ class EODHDProvider:
             # Provider's own industry string, kept verbatim so biotech can be
             # separated from asset-heavy healthcare once we act on it.
             subsector=general.get("Industry"),
-            currency=general.get("CurrencyCode"),
+            currency=self._reporting_currency(payload) or general.get("CurrencyCode"),
             market_cap=_number(highlights.get("MarketCapitalization")),
             is_active=not bool(general.get("IsDelisted")),
+            # General.CurrencyCode is the QUOTE currency — GBX for most LSE
+            # names — which differs from the currency the accounts are
+            # reported in. Kept apart so nothing conflates pence with pounds.
+            quote_currency=general.get("CurrencyCode"),
         )
+
+    @staticmethod
+    def _reporting_currency(payload: dict) -> str | None:
+        """Currency the statements are denominated in, from the newest period."""
+        periods = (
+            payload.get("Financials", {})
+            .get("Income_Statement", {})
+            .get("quarterly", {})
+        )
+        if not isinstance(periods, dict) or not periods:
+            return None
+        newest = periods[max(periods)]
+        return newest.get("currency_symbol") if isinstance(newest, dict) else None
 
     def parse_prices(self, ticker: str, payload: object) -> list[PriceBar]:
         if not isinstance(payload, list):
@@ -201,6 +223,83 @@ class EODHDProvider:
                 )
             )
         return bars
+
+    def parse_dividends(self, ticker: str, payload: object) -> list[FundamentalRow]:
+        """Dividends per share, keyed on the ex-date.
+
+        The ex-date is when the market prices the dividend out, and it is
+        public from the declaration date. Where a declaration date is given we
+        use it, so a dividend is not treated as known before it was announced.
+        """
+        if not isinstance(payload, list):
+            return []
+        rows = []
+        for entry in payload:
+            if not isinstance(entry, dict):
+                continue
+            ex_date = _day(entry.get("date"))
+            value = _number(entry.get("value"))
+            if ex_date is None or value is None:
+                continue
+            declared = _day(entry.get("declarationDate"))
+            published_at, estimated = (
+                (declared, False) if declared and declared <= ex_date else (ex_date, True)
+            )
+            rows.append(
+                FundamentalRow(
+                    ticker=ticker,
+                    metric="dividend_per_share",
+                    value=value,
+                    period_end=ex_date,
+                    published_at=published_at,
+                    published_at_estimated=estimated,
+                    source=SOURCE,
+                )
+            )
+        return rows
+
+    def parse_consensus(
+        self, ticker: str, payload: object, observed_on: date
+    ) -> list[ConsensusRow]:
+        """Every consensus period in the payload, stamped with today's date.
+
+        All periods are kept, not just the current year: the value of this
+        series is that it accumulates, and which period matters later is not
+        knowable now.
+        """
+        if not isinstance(payload, dict):
+            return []
+        trend = payload.get("Earnings", {}).get("Trend", {})
+        if not isinstance(trend, dict):
+            return []
+
+        rows = []
+        for entry in trend.values():
+            if not isinstance(entry, dict):
+                continue
+            period_end = _day(entry.get("date"))
+            if period_end is None:
+                continue
+            rows.append(
+                ConsensusRow(
+                    ticker=ticker,
+                    observed_on=observed_on,
+                    period_end=period_end,
+                    period_label=entry.get("period"),
+                    eps_avg=_number(entry.get("earningsEstimateAvg")),
+                    eps_low=_number(entry.get("earningsEstimateLow")),
+                    eps_high=_number(entry.get("earningsEstimateHigh")),
+                    eps_year_ago=_number(entry.get("earningsEstimateYearAgoEps")),
+                    analysts=_number(entry.get("earningsEstimateNumberOfAnalysts")),
+                    eps_7d_ago=_number(entry.get("epsTrend7daysAgo")),
+                    eps_30d_ago=_number(entry.get("epsTrend30daysAgo")),
+                    eps_60d_ago=_number(entry.get("epsTrend60daysAgo")),
+                    eps_90d_ago=_number(entry.get("epsTrend90daysAgo")),
+                    revenue_avg=_number(entry.get("revenueEstimateAvg")),
+                    source=SOURCE,
+                )
+            )
+        return rows
 
     def parse_fundamentals(
         self, ticker: str, payload: object

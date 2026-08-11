@@ -15,7 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.fundamentals import Fundamental, PriceDaily, Security
 from app.ingest import archive as archive_module
+from app.ingest import consensus as consensus_module
 from app.ingest.budget import CallBudget
+from app.ingest.mapping import UnmappedSector
 from app.ingest.protocol import MarketDataProvider
 
 logger = logging.getLogger(__name__)
@@ -84,6 +86,54 @@ async def _fetch_and_archive(
     return fetched.payload
 
 
+async def _upsert_security(session: AsyncSession, record) -> None:
+    columns = {
+        "name": record.name,
+        "sector": record.sector,
+        "exchange": record.exchange,
+        "subsector": record.subsector,
+        "currency": record.currency,
+        "quote_currency": record.quote_currency,
+        "market_cap": record.market_cap,
+        "is_active": record.is_active,
+    }
+    await session.execute(
+        insert(Security)
+        .values(ticker=record.ticker, **columns)
+        .on_conflict_do_update(index_elements=["ticker"], set_=columns)
+    )
+
+
+async def _upsert_fundamentals(
+    session: AsyncSession, rows: list
+) -> tuple[int, int]:
+    estimated = 0
+    for row in rows:
+        if row.published_at_estimated:
+            estimated += 1
+        await session.execute(
+            insert(Fundamental)
+            .values(
+                ticker=row.ticker,
+                metric=row.metric,
+                value=row.value,
+                period_end=row.period_end,
+                published_at=row.published_at,
+                published_at_estimated=row.published_at_estimated,
+                source=row.source,
+            )
+            .on_conflict_do_update(
+                index_elements=["ticker", "metric", "period_end", "published_at"],
+                set_={
+                    "value": row.value,
+                    "published_at_estimated": row.published_at_estimated,
+                    "source": row.source,
+                },
+            )
+        )
+    return len(rows), estimated
+
+
 async def sync_securities(
     session: AsyncSession,
     provider: MarketDataProvider,
@@ -129,31 +179,7 @@ async def sync_securities(
             continue
 
         record = provider.parse_security(symbol, payload)
-        await session.execute(
-            insert(Security)
-            .values(
-                ticker=record.ticker,
-                name=record.name,
-                sector=record.sector,
-                exchange=record.exchange,
-                subsector=record.subsector,
-                currency=record.currency,
-                market_cap=record.market_cap,
-                is_active=record.is_active,
-            )
-            .on_conflict_do_update(
-                index_elements=["ticker"],
-                set_={
-                    "name": record.name,
-                    "sector": record.sector,
-                    "exchange": record.exchange,
-                    "subsector": record.subsector,
-                    "currency": record.currency,
-                    "market_cap": record.market_cap,
-                    "is_active": record.is_active,
-                },
-            )
-        )
+        await _upsert_security(session, record)
         result.rows_written = 1
         results.append(result)
 
@@ -272,32 +298,61 @@ async def sync_fundamentals(
         payload = cached.payload
         result.notes.append("reparsed from archive, no call spent")
 
-    rows = provider.parse_fundamentals(symbol, payload)
-    estimated = 0
-    for row in rows:
-        if row.published_at_estimated:
-            estimated += 1
-        await session.execute(
-            insert(Fundamental)
-            .values(
-                ticker=row.ticker,
-                metric=row.metric,
-                value=row.value,
-                period_end=row.period_end,
-                published_at=row.published_at,
-                published_at_estimated=row.published_at_estimated,
-                source=row.source,
-            )
-            .on_conflict_do_update(
-                index_elements=["ticker", "metric", "period_end", "published_at"],
-                set_={
-                    "value": row.value,
-                    "published_at_estimated": row.published_at_estimated,
-                    "source": row.source,
-                },
-            )
+    written, estimated = await _upsert_fundamentals(
+        session, provider.parse_fundamentals(symbol, payload)
+    )
+    result.rows_written = written
+    result.notes.append(f"{estimated} of {written} rows have an estimated published_at")
+
+    # The consensus snapshot rides along in the same payload, so capturing it
+    # costs nothing. Appended with today's date, never overwriting yesterday.
+    observations = await consensus_module.store(
+        session, provider.parse_consensus(symbol, payload, date.today())
+    )
+    if observations:
+        result.notes.append(f"{observations} consensus observations recorded")
+
+    await session.flush()
+    return result
+
+
+async def sync_dividends(
+    session: AsyncSession,
+    provider: MarketDataProvider,
+    budget: CallBudget,
+    ticker: str,
+    dry_run: bool = False,
+    force: bool = False,
+) -> IngestResult:
+    """Dividend history, so the value lens reaches full coverage."""
+    result = IngestResult(job="sync_dividends", ticker=ticker, dry_run=dry_run)
+    symbol = bare(ticker)
+
+    cached = await archive_module.latest(session, provider.name, "div", ticker)
+    needs_call = force or cached is None
+    result.calls_planned = 1 if needs_call else 0
+
+    if dry_run:
+        result.notes.append(
+            "would fetch" if needs_call else "would reparse from archive, no call"
         )
-    result.rows_written = len(rows)
-    result.notes.append(f"{estimated} of {len(rows)} rows have an estimated published_at")
+        result.budget_remaining = await budget.remaining()
+        return result
+
+    if needs_call:
+        payload = await _fetch_and_archive(
+            session, provider, budget, result,
+            lambda: provider.fetch_dividends(ticker), ticker,
+        )
+    else:
+        payload = cached.payload
+        result.notes.append("reparsed from archive, no call spent")
+
+    written, estimated = await _upsert_fundamentals(
+        session, provider.parse_dividends(symbol, payload)
+    )
+    result.rows_written = written
+    if written:
+        result.notes.append(f"{estimated} of {written} lack a declaration date")
     await session.flush()
     return result

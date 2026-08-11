@@ -30,8 +30,12 @@ class Security(Base):
     # Provider's finer classification, kept so biotech can eventually be
     # separated from asset-heavy healthcare.
     subsector: Mapped[str | None] = mapped_column(Text)
-    # Stored, never converted at ingest.
+    # Currency the accounts are reported in. Stored, never converted.
     currency: Mapped[str | None] = mapped_column(Text)
+    # Currency prices are QUOTED in — GBX (pence) for most LSE names, which
+    # is 1/100 of GBP. Deliberately separate from `currency`; see
+    # app/currency.py for why these must never be equated.
+    quote_currency: Mapped[str | None] = mapped_column(Text)
     market_cap: Mapped[Decimal | None] = mapped_column(Numeric)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     updated_at: Mapped[datetime] = mapped_column(

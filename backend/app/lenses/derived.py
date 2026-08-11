@@ -42,7 +42,10 @@ STOCK_METRICS = (
     "total_equity",
     "shares_outstanding",
 )
-SOURCE_METRICS = FLOW_METRICS + STOCK_METRICS + ("days_inventory",)
+SOURCE_METRICS = FLOW_METRICS + STOCK_METRICS + (
+    "days_inventory",
+    "dividend_per_share",
+)
 
 # Trading-day offsets for trailing returns.
 TRADING_DAYS = {"return_3m": 63, "return_6m": 126, "return_12m": 252}
@@ -318,6 +321,17 @@ def from_prices_and_statements(
         derived["fcf_yield"] = fcf / market_cap * 100.0
     if equity is not None and equity > 0:
         derived["price_to_book"] = market_cap / equity
+
+    # Dividends are irregular events, not quarterly line items, so trailing
+    # twelve months is a date window rather than four periods.
+    price_date, price = series[0]
+    paid = [
+        value
+        for when, value in history.get("dividend_per_share", ())
+        if 0 <= (price_date - when).days < DAYS_IN_YEAR
+    ]
+    if paid and price > 0:
+        derived["dividend_yield"] = sum(paid) / price * 100.0
 
     return derived
 

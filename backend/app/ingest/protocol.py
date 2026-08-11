@@ -31,9 +31,35 @@ class SecurityRecord:
     exchange: str | None
     sector: str
     subsector: str | None
+    # Currency the accounts are reported in.
     currency: str | None
     market_cap: float | None
     is_active: bool = True
+    # Currency prices are quoted in, which is not always the reporting
+    # currency: London quotes many shares in GBX (pence) while reporting in
+    # GBP. Kept separate so the two can never be silently conflated.
+    quote_currency: str | None = None
+
+
+@dataclass(frozen=True)
+class ConsensusRow:
+    """One analyst-consensus observation, stamped with the date we saw it."""
+
+    ticker: str
+    observed_on: date
+    period_end: date
+    period_label: str | None
+    eps_avg: float | None
+    eps_low: float | None
+    eps_high: float | None
+    eps_year_ago: float | None
+    analysts: float | None
+    eps_7d_ago: float | None
+    eps_30d_ago: float | None
+    eps_60d_ago: float | None
+    eps_90d_ago: float | None
+    revenue_avg: float | None
+    source: str
 
 
 @dataclass(frozen=True)
@@ -78,6 +104,8 @@ class MarketDataProvider(Protocol):
 
     async def fetch_fundamentals(self, ticker: str) -> FetchResult: ...
 
+    async def fetch_dividends(self, ticker: str) -> FetchResult: ...
+
     def parse_security(self, ticker: str, payload: object) -> SecurityRecord: ...
 
     def parse_prices(self, ticker: str, payload: object) -> list[PriceBar]: ...
@@ -85,3 +113,11 @@ class MarketDataProvider(Protocol):
     def parse_fundamentals(
         self, ticker: str, payload: object
     ) -> list[FundamentalRow]: ...
+
+    def parse_dividends(
+        self, ticker: str, payload: object
+    ) -> list[FundamentalRow]: ...
+
+    def parse_consensus(
+        self, ticker: str, payload: object, observed_on: date
+    ) -> list[ConsensusRow]: ...

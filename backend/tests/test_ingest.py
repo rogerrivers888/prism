@@ -11,7 +11,7 @@ from app.fundamentals import Fundamental, PriceDaily, Security
 from app.ingest.archive import RawResponse, latest
 from app.ingest.budget import BudgetExceeded, CallBudget
 from app.ingest.eodhd import EODHDProvider, resolve_published_at
-from app.ingest.jobs import sync_fundamentals, sync_prices, sync_securities
+from app.ingest.jobs import sync_dividends, sync_fundamentals, sync_prices, sync_securities
 from app.ingest.mapping import UnmappedSector, map_sector
 
 # A small but structurally faithful stand-in for the real payload.
@@ -85,6 +85,11 @@ FUNDAMENTALS = {
     },
 }
 
+DIVIDENDS = [
+    {"date": "2026-02-15", "declarationDate": "2026-01-20", "value": "0.25"},
+    {"date": "2025-11-15", "declarationDate": None, "value": "0.25"},
+]
+
 EOD = [
     {"date": "2026-03-30", "open": 10, "high": 11, "low": 9, "close": 10.5,
      "adjusted_close": 10.5, "volume": 1000},
@@ -103,6 +108,8 @@ class RecordingProvider(EODHDProvider):
             self.requests.append(str(request.url.path))
             if "/fundamentals/" in request.url.path:
                 return httpx.Response(200, json=FUNDAMENTALS)
+            if "/div/" in request.url.path:
+                return httpx.Response(200, json=DIVIDENDS)
             return httpx.Response(200, json=EOD)
 
         client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
@@ -113,7 +120,7 @@ class RecordingProvider(EODHDProvider):
 async def clean_ingest(session):
     await session.execute(
         text(
-            "TRUNCATE securities, fundamentals, prices_daily, raw_responses, "
+            "TRUNCATE securities, fundamentals, prices_daily, raw_responses, consensus_estimates, "
             "api_call_usage, lens_scores_daily, dispersion_daily"
         )
     )
@@ -320,6 +327,100 @@ async def test_securities_are_idempotent(session, provider, budget, clean_ingest
 
     count = (await session.execute(select(Security))).scalars().all()
     assert len(count) == 1
+
+
+async def test_dividends_use_declaration_date_when_given(session, provider, budget, clean_ingest):
+    await sync_dividends(session, provider, budget, "TEST.US")
+    await session.commit()
+
+    rows = {
+        r.period_end: r
+        for r in (
+            await session.execute(
+                select(Fundamental).where(
+                    Fundamental.metric == "dividend_per_share"
+                )
+            )
+        ).scalars()
+    }
+    # Declared a month before the ex-date, so that is when it became known.
+    declared = rows[date(2026, 2, 15)]
+    assert declared.published_at == date(2026, 1, 20)
+    assert declared.published_at_estimated is False
+    # No declaration date: fall back to the ex-date and say it is estimated.
+    undeclared = rows[date(2025, 11, 15)]
+    assert undeclared.published_at == date(2025, 11, 15)
+    assert undeclared.published_at_estimated is True
+
+
+async def test_consensus_accumulates_rather_than_overwriting(session, provider, budget, clean_ingest):
+    from app.ingest.consensus import ConsensusEstimate, store
+    from app.ingest.protocol import ConsensusRow
+
+    await sync_fundamentals(session, provider, budget, "TEST.US")
+    await session.commit()
+
+    rows = (await session.execute(select(ConsensusEstimate))).scalars().all()
+    assert len(rows) == 3  # every period in the payload, not just the current year
+    first_day = rows[0].observed_on
+
+    # A later observation of the same period lands as a new row, so the
+    # series builds forward instead of being flattened.
+    await store(
+        session,
+        [
+            ConsensusRow(
+                ticker="TEST", observed_on=date(2026, 9, 1),
+                period_end=date(2026, 8, 31), period_label="0y",
+                eps_avg=120.0, eps_low=None, eps_high=None, eps_year_ago=None,
+                analysts=None, eps_7d_ago=None, eps_30d_ago=None,
+                eps_60d_ago=None, eps_90d_ago=None, revenue_avg=None,
+                source="test",
+            )
+        ],
+    )
+    await session.commit()
+
+    same_period = (
+        await session.execute(
+            select(ConsensusEstimate).where(
+                ConsensusEstimate.period_end == date(2026, 8, 31)
+            )
+        )
+    ).scalars().all()
+    assert len(same_period) == 2
+    assert {r.observed_on for r in same_period} == {first_day, date(2026, 9, 1)}
+
+
+async def test_quote_currency_captured_separately_from_reporting(session, provider, budget, clean_ingest):
+    await sync_securities(session, provider, budget, tickers=["TEST.US"])
+    await session.commit()
+    security = await session.get(Security, "TEST")
+    # US name: both are USD, but they come from different fields.
+    assert security.quote_currency == "USD"
+    assert security.currency == "USD"
+
+
+async def test_universe_run_is_resumable_and_collects_unmapped_sectors(
+    session, provider, budget, clean_ingest
+):
+    from app.ingest.runner import sync_universe
+
+    report = await sync_universe(
+        session, provider, budget, ["TEST.US"], with_dividends=True
+    )
+    assert report.ingested == 1
+    assert report.calls_spent == 3
+    calls_after_first = len(provider.requests)
+
+    # Re-running skips what is already archived rather than re-fetching it.
+    second = await sync_universe(
+        session, provider, budget, ["TEST.US"], with_dividends=True
+    )
+    assert second.skipped_already_held == 1
+    assert second.ingested == 0
+    assert second.calls_spent == 0
+    assert len(provider.requests) == calls_after_first
 
 
 async def test_fundamentals_rerun_does_not_duplicate_rows(session, provider, budget, clean_ingest):
