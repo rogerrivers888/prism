@@ -7,7 +7,7 @@ The per-ticker endpoint is the wrong shape for a 526-row table — that would be
 from datetime import UTC, date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -84,7 +84,7 @@ async def get_universe(session: SessionDep, as_of: date | None = None) -> Univer
         ).scalar()
 
     securities = (
-        await session.execute(select(Security).order_by(Security.ticker))
+        await session.execute(select(Security).where(Security.is_active.is_(True)).order_by(Security.ticker))
     ).scalars().all()
 
     scores: dict[str, dict[str, LensCell]] = {}
@@ -155,3 +155,88 @@ async def get_universe(session: SessionDep, as_of: date | None = None) -> Univer
         count=len(out),
         rows=out,
     )
+
+
+class PeerCount(BaseModel):
+    sector: str
+    members: int
+    # Below 8, percentiles fall back to absolute bands — a silent degradation
+    # worth surfacing rather than leaving to be discovered in the audit trail.
+    ranks_on_peers: bool
+
+
+class AddSecurityIn(BaseModel):
+    tickers: list[str]
+
+
+@router.get("/universe/health")
+async def universe_health(session: SessionDep) -> dict:
+    rows = (
+        await session.execute(
+            select(Security.sector, func.count())
+            .where(Security.is_active.is_(True))
+            .group_by(Security.sector)
+            .order_by(func.count().desc())
+        )
+    ).all()
+    counts = [
+        PeerCount(sector=sector, members=n, ranks_on_peers=n >= 8) for sector, n in rows
+    ]
+    return {
+        "total": sum(c.members for c in counts),
+        "sectors": counts,
+        "thin_sectors": [c.sector for c in counts if not c.ranks_on_peers],
+    }
+
+
+@router.post("/universe/securities")
+async def add_securities(body: AddSecurityIn, session: SessionDep) -> dict:
+    """Ingest new tickers: metadata, prices, fundamentals, then score them.
+
+    Deliberately synchronous and slow — a first ingest is a few seconds per
+    ticker — so the UI can report real progress rather than pretending.
+    """
+    from app.ingest.budget import BudgetExceeded, CallBudget
+    from app.ingest.eodhd import EODHDProvider
+    from app.ingest.mapping import UnmappedSector
+    from app.ingest.runner import sync_universe
+    from app.config import settings
+
+    if not settings.eodhd_api_key:
+        raise HTTPException(status_code=503, detail="EODHD_API_KEY is not configured")
+
+    provider = EODHDProvider(settings.eodhd_api_key)
+    budget = CallBudget(session, provider.name, settings.eodhd_daily_call_budget)
+    tickers = [t.strip().upper() for t in body.tickers if t.strip()]
+    tickers = [t if "." in t else f"{t}.US" for t in tickers]
+
+    try:
+        report = await sync_universe(
+            session, provider, budget, tickers, concurrency=4, with_dividends=True
+        )
+    except BudgetExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+    except UnmappedSector as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    await session.commit()
+
+    summary = report.as_dict()
+    return {
+        "requested": summary["requested"],
+        "ingested": summary["ingested"],
+        "already_held": summary["skipped_already_held"],
+        "failed": summary["failed"],
+        "unmapped_sectors": summary["unmapped_sectors"],
+        "calls_spent": summary["calls_spent"],
+    }
+
+
+@router.delete("/universe/securities/{ticker}")
+async def remove_security(ticker: str, session: SessionDep) -> dict:
+    """Soft delete. History and any events referencing it survive untouched."""
+    security = await session.get(Security, ticker.upper())
+    if security is None:
+        raise HTTPException(status_code=404, detail=f"unknown ticker {ticker}")
+    security.is_active = False
+    await session.commit()
+    return {"ticker": security.ticker, "is_active": False}

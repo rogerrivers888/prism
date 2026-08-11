@@ -29,6 +29,17 @@ export const LENS_BAR_CLASS: Record<LensName, string> = {
   cycle: "bg-lens-cycle",
 };
 
+/** Statically spelled out, like the others: a class name assembled at runtime
+ *  is invisible to Tailwind's scanner and silently produces no style. */
+export const LENS_STROKE_CLASS: Record<LensName, string> = {
+  trend: "stroke-lens-trend",
+  growth: "stroke-lens-growth",
+  quality: "stroke-lens-quality",
+  value: "stroke-lens-value",
+  momentum: "stroke-lens-momentum",
+  cycle: "stroke-lens-cycle",
+};
+
 export const LENS_TEXT_CLASS: Record<LensName, string> = {
   trend: "text-lens-trend",
   growth: "text-lens-growth",

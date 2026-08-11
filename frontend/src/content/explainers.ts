@@ -1,0 +1,318 @@
+/** Plain-English explainers for every declared metric.
+ *
+ * Written for someone with no finance background. Each one answers the same
+ * six questions, because "what is this number" is only the first thing you
+ * need before you can act on it — the last two matter most and are usually
+ * the ones missing from a data product.
+ */
+export type Explainer = {
+  title: string;
+  what: string;
+  how: string;
+  example: string;
+  scale: string;
+  alongside: string;
+  breaks: string;
+};
+
+export const EXPLAINERS: Record<string, Explainer> = {
+  // ---------------------------------------------------------------- value
+  pe_ratio: {
+    title: "P/E ratio",
+    what: "How many pounds you pay for each pound of yearly profit. A P/E of 15 means you're paying £15 for £1 of annual earnings.",
+    how: "The company's total market value divided by its profit over the last twelve months.",
+    example: "A company worth £3bn that made £200m last year has a P/E of 15 (3,000 ÷ 200).",
+    scale: "Lower is cheaper. Roughly: under 10 is cheap, 10–20 is ordinary, over 30 means the market expects a lot of growth. But the 'right' P/E differs hugely by industry.",
+    alongside: "Growth rate — a high P/E is only expensive if the growth doesn't arrive. And free cash flow, since profit can be an accounting figure while cash is not.",
+    breaks: "It's meaningless when profits are negative (we show no score rather than a negative P/E), and unreliable when profits are unusually high or low for one year — a cyclical peak makes a company look cheapest exactly when it's most dangerous.",
+  },
+  ev_ebitda: {
+    title: "EV/EBITDA",
+    what: "Like P/E, but it counts the company's debt too, and measures profit before interest, tax and the accounting charge for wearing-out assets. It asks what you'd pay to buy the whole business outright.",
+    how: "Enterprise value (market value plus debt, minus cash) divided by EBITDA over the last twelve months.",
+    example: "A company worth £3bn with £1bn of debt and £200m of cash has an enterprise value of £3.8bn. If EBITDA was £400m, EV/EBITDA is 9.5.",
+    scale: "Lower is cheaper. Under 8 is generally cheap, 8–14 ordinary, above 18 demanding.",
+    alongside: "Net debt to EBITDA, since a low multiple on a heavily indebted business is not the bargain it appears.",
+    breaks: "Undefined when EBITDA is zero or negative — we exclude it rather than print a meaningless number. Also undefined for banks and insurers, where debt is raw material rather than borrowing.",
+  },
+  fcf_yield: {
+    title: "Free cash flow yield",
+    what: "The actual spare cash the business generated last year, as a percentage of what the whole company costs. It's the closest thing to 'what would this pay me if I owned all of it'.",
+    how: "Cash from operations minus what was spent on equipment and property, divided by market value.",
+    example: "A £3bn company that generated £150m of spare cash has a 5% FCF yield.",
+    scale: "Higher is better. Above 6% is generous, 3–6% ordinary, below 2% means you're paying for future growth rather than present cash.",
+    alongside: "FCF conversion, which tells you whether the cash is a fluke or a habit.",
+    breaks: "Negative free cash flow can mean a company is dying, or that it's investing heavily in something that will pay off. We can't tell which from the number, so we exclude it and flag it for you to judge.",
+  },
+  price_to_book: {
+    title: "Price to book",
+    what: "What you pay compared to the accounting value of everything the company owns minus everything it owes.",
+    how: "Market value divided by shareholders' equity from the balance sheet.",
+    example: "A £3bn company whose books say its net assets are worth £1bn has a P/B of 3.",
+    scale: "Lower is cheaper. Below 1 means you're paying less than the stated value of the assets. Above 5 means the value is mostly in things the accounts don't capture.",
+    alongside: "Return on capital — a high P/B is justified if the assets earn well.",
+    breaks: "Nearly useless for software and media companies, whose real assets are code and brands that never appear on a balance sheet. We exclude it for those. For banks and insurers it's the opposite — one of the more meaningful measures, so we keep it.",
+  },
+  dividend_yield: {
+    title: "Dividend yield",
+    what: "The cash paid out to shareholders over the last year, as a percentage of the share price.",
+    how: "Total dividends per share over twelve months divided by the current price.",
+    example: "A £10 share that paid 30p in dividends has a 3% yield.",
+    scale: "Higher pays you more now. Above 4% is generous, 2–4% ordinary, zero is common for growth companies that reinvest instead.",
+    alongside: "FCF conversion and payout sustainability — a very high yield is often the market predicting a cut.",
+    breaks: "A yield can rise purely because the price fell. Zero yield says nothing bad; plenty of excellent companies pay nothing.",
+  },
+  // -------------------------------------------------------------- quality
+  roic: {
+    title: "Return on invested capital",
+    what: "How much profit the business squeezes out of the money tied up in it. The single best measure of whether a company is actually good at what it does.",
+    how: "Operating profit after tax, divided by the capital invested in the business.",
+    example: "A business using £1bn of capital that earns £150m after tax has a ROIC of 15%.",
+    scale: "Higher is better. Above 20% is excellent, 10–20% solid, below the company's cost of borrowing means it destroys value by growing.",
+    alongside: "Growth. High ROIC plus growth compounds; high ROIC without growth is a cash cow; low ROIC with growth burns money.",
+    breaks: "Distorted by acquisitions (goodwill inflates capital) and by asset-light businesses that can show enormous ROIC on a tiny capital base.",
+  },
+  gross_profitability: {
+    title: "Gross profitability",
+    what: "How much gross profit the company earns per pound of assets it owns. A measure of how productively the asset base is used.",
+    how: "Gross profit divided by total assets. Devised by Robert Novy-Marx, who found it predicted returns better than most quality measures.",
+    example: "A company with £5bn of assets earning £1.5bn of gross profit scores 0.30.",
+    scale: "Higher is better. Above 0.33 is strong, 0.20–0.33 average, below 0.15 weak.",
+    alongside: "ROIC. They measure similar things differently; agreement between them is reassuring.",
+    breaks: "Less meaningful for financials, where 'assets' means something different, and for companies that lease rather than own.",
+  },
+  gross_margin: {
+    title: "Gross margin",
+    what: "Of every pound of sales, how much is left after paying for the direct cost of making the thing. A rough measure of pricing power.",
+    how: "Gross profit divided by revenue.",
+    example: "£100m of sales costing £40m to produce gives a 60% gross margin.",
+    scale: "Shown for information, not scored. Software runs at 80%, supermarkets at 25% — the difference is the industry, not the quality of the business.",
+    alongside: "Gross profitability, which is the scored version and comparable across industries.",
+    breaks: "Comparing it across different industries is meaningless, which is exactly why we display it but don't rank on it.",
+  },
+  net_debt_to_ebitda: {
+    title: "Net debt to EBITDA",
+    what: "How many years of profit it would take to pay off the debt. The standard measure of whether borrowing is dangerous.",
+    how: "Debt minus cash, divided by EBITDA.",
+    example: "£800m of net debt against £400m of EBITDA is 2.0 — two years of profit to clear it.",
+    scale: "Lower is safer. Below 1 is conservative, 1–3 normal, above 4 is fragile in a downturn. Negative means more cash than debt.",
+    alongside: "Interest cover, which measures whether the debt is affordable now rather than in aggregate.",
+    breaks: "Undefined for banks and insurers, where deposits are funding rather than borrowing. Also flattering for cyclical companies measured at a profit peak.",
+  },
+  interest_cover: {
+    title: "Interest cover",
+    what: "How many times over the company's profit could pay its interest bill. A direct measure of how close it is to trouble.",
+    how: "Operating profit divided by interest expense.",
+    example: "£300m of operating profit against £30m of interest is 10× cover.",
+    scale: "Higher is safer. Above 10 is comfortable, 3–10 adequate, below 2 means a bad year could threaten solvency.",
+    alongside: "Net debt to EBITDA. Cover can look fine at low rates and collapse when debt is refinanced.",
+    breaks: "We skip it when reported interest is zero — that usually means the expense was capitalised or netted off rather than that the company has infinite cover.",
+  },
+  fcf_conversion: {
+    title: "Free cash flow conversion",
+    what: "How much of the reported profit actually turned into cash. The main defence against accounting that flatters.",
+    how: "Free cash flow divided by net income.",
+    example: "£120m of cash from £100m of reported profit is 120% conversion.",
+    scale: "Higher is better. Above 100% is excellent, 75–100% healthy, persistently below 50% is a warning that profits are an accounting artefact.",
+    alongside: "Growth in receivables and inventory, which is usually where the missing cash went.",
+    breaks: "Lumpy for companies with big investment cycles, and meaningless in a year when profit is near zero.",
+  },
+  // --------------------------------------------------------------- growth
+  revenue_growth_yoy: {
+    title: "Revenue growth (year on year)",
+    what: "How much bigger sales are than a year ago.",
+    how: "Sales over the last twelve months compared with the twelve months before.",
+    example: "£110m this year against £100m last year is 10% growth.",
+    scale: "Higher is better. Above 20% is fast, 5–15% steady, negative means the business is shrinking.",
+    alongside: "Whether profit grew too — growth bought by cutting prices isn't worth much.",
+    breaks: "Flattered by acquisitions, which buy revenue rather than earn it. A single strong or weak comparison quarter distorts it.",
+  },
+  eps_growth_yoy: {
+    title: "Earnings per share growth",
+    what: "How much more profit each share represents than a year ago.",
+    how: "Profit divided by share count, compared with a year earlier.",
+    example: "Earnings of £1.20 per share against £1.00 is 20% growth.",
+    scale: "Higher is better. Above 25% is fast, 5–15% steady, negative means profits are falling.",
+    alongside: "Revenue growth. EPS can grow purely from buying back shares, which is not the same as the business improving.",
+    breaks: "Very noisy off a small base — going from £1m to £2m of profit is 100% growth and may mean nothing. We decline to compute it off a negative base at all.",
+  },
+  revenue_cagr_3y: {
+    title: "Revenue growth (3-year average)",
+    what: "The steady annual rate that would take sales from where they were three years ago to where they are now.",
+    how: "Compound annual growth rate over three years.",
+    example: "Sales rising from £100m to £173m over three years is 20% a year.",
+    scale: "Higher is better. Above 15% is strong, 5–10% ordinary. More trustworthy than a single year.",
+    alongside: "The single-year figure. If three-year growth is strong but this year is weak, something changed recently.",
+    breaks: "Hides the shape of the growth — steady 20% and a flat two years followed by a spike look identical.",
+  },
+  eps_cagr_3y: {
+    title: "Earnings growth (3-year average)",
+    what: "The steady annual rate of profit-per-share growth over three years.",
+    how: "Compound annual growth rate of earnings per share.",
+    example: "EPS from £1.00 to £1.73 over three years is 20% a year.",
+    scale: "Higher is better. Above 15% is strong. Smooths out single-year noise.",
+    alongside: "Revenue CAGR — if earnings grew much faster than sales, margins expanded, and that may not continue.",
+    breaks: "Cannot be computed if profits were negative at either end, so it's often missing for recovering companies.",
+  },
+  fcf_growth_yoy: {
+    title: "Free cash flow growth",
+    what: "How much more spare cash the business generated than a year ago.",
+    how: "Free cash flow over twelve months compared with the prior twelve.",
+    example: "£120m against £100m is 20% growth.",
+    scale: "Higher is better, but expect it to be lumpier than revenue or profit growth.",
+    alongside: "Capital spending — cash flow can jump simply because investment was cut, which borrows from the future.",
+    breaks: "Very volatile. One large payment or delayed receipt can swing it wildly, so a single year means little.",
+  },
+  // ---------------------------------------------------------------- trend
+  price_vs_50dma: {
+    title: "Price vs 50-day average",
+    what: "How far the share price is above or below its average over the last ten weeks. A short-term read on direction.",
+    how: "Current price compared with the mean closing price of the last 50 trading days.",
+    example: "A £10 share whose 50-day average is £9 sits 11% above it.",
+    scale: "Above zero means recent strength. Far above (say +15%) can mean momentum or over-extension.",
+    alongside: "The 200-day figure. Above the short average but below the long one is a bounce inside a downtrend.",
+    breaks: "Says nothing about the business. In a sharp market-wide move, everything moves together and it tells you about the market, not the company.",
+  },
+  price_vs_200dma: {
+    title: "Price vs 200-day average",
+    what: "How far the price is above or below its average over roughly the last year. The standard long-term trend measure.",
+    how: "Current price compared with the mean close of the last 200 trading days.",
+    example: "A £10 share with a £7 average sits 43% above it.",
+    scale: "Above zero is conventionally an uptrend, below zero a downtrend.",
+    alongside: "The 50-day figure and the direction of the average itself.",
+    breaks: "Slow to react. It will still read 'uptrend' well after a peak, and 'downtrend' well after a bottom.",
+  },
+  ma50_vs_ma200: {
+    title: "50-day vs 200-day average",
+    what: "Whether the short-term average is above the long-term one. A measure of whether the trend itself is strengthening.",
+    how: "The 50-day average compared with the 200-day average.",
+    example: "A 50-day average of £9 against a 200-day of £7.50 is 20% above.",
+    scale: "Positive means the recent trend is stronger than the long one.",
+    alongside: "Price versus each average.",
+    breaks: "Whipsaws badly in sideways markets, flipping repeatedly with no useful signal.",
+  },
+  pct_above_52w_low: {
+    title: "Distance above the 52-week low",
+    what: "How far the price has risen from its lowest point in the last year.",
+    how: "Current price compared with the lowest close of the last 52 weeks.",
+    example: "A £10 share that bottomed at £5 is 100% above its low.",
+    scale: "Higher means further from the bottom. Near zero means the price is at or near its worst in a year.",
+    alongside: "Distance from the 52-week high, which tells the other half of the story.",
+    breaks: "A stock can be far above its low and still far below where it started. It measures recovery, not value.",
+  },
+  // ------------------------------------------------------------- momentum
+  return_3m: {
+    title: "3-month return",
+    what: "How much the share has gained or lost over the last quarter.",
+    how: "Price change over roughly 63 trading days, using prices adjusted for dividends and splits.",
+    example: "£10 rising to £11.50 over three months is a 15% return.",
+    scale: "Higher is better for a momentum reading. Momentum tends to persist over months and reverse over years.",
+    alongside: "The 6- and 12-month figures. Strong short-term but weak long-term returns is a bounce, not a trend.",
+    breaks: "Heavily influenced by whatever the whole market did. It tells you nothing about whether the price is justified.",
+  },
+  return_6m: {
+    title: "6-month return",
+    what: "The share's gain or loss over the last half year.",
+    how: "Price change over roughly 126 trading days, adjusted for dividends and splits.",
+    example: "£10 to £12 over six months is 20%.",
+    scale: "Higher is better for momentum. This window is where momentum effects are usually strongest.",
+    alongside: "The 12-month figure and earnings revisions.",
+    breaks: "Same market-wide problem as the 3-month figure, and it can be dominated by one event.",
+  },
+  return_12m: {
+    title: "12-month return",
+    what: "The share's gain or loss over the last year.",
+    how: "Price change over roughly 252 trading days, adjusted for dividends and splits.",
+    example: "£10 to £17 over a year is 70%.",
+    scale: "Higher is better for momentum, though very high figures often mean expectations are now extremely high too.",
+    alongside: "Valuation. A very strong year often means the value lens now reads expensive.",
+    breaks: "Long-run winners tend to mean-revert. The strongest 12-month returns are frequently followed by disappointment.",
+  },
+  earnings_revision_3m: {
+    title: "Earnings revisions (3 months)",
+    what: "Whether professional analysts have raised or cut their profit forecasts over the last quarter. A measure of whether the story is improving.",
+    how: "The change in the average forecast for this year's earnings per share over the last 90 days.",
+    example: "A consensus forecast moving from £1.00 to £1.10 is a 10% upward revision.",
+    scale: "Positive means forecasts are rising. Above 10% is a strong upgrade cycle, negative means downgrades.",
+    alongside: "Price returns. Rising forecasts with a flat price can mean the market hasn't caught up.",
+    breaks: "Analysts herd and lag. We can only capture this going forward — the provider gives today's snapshot, not history, so there is nothing before the day we started recording.",
+  },
+  // ---------------------------------------------------------------- cycle
+  inventory_to_sales: {
+    title: "Inventory to sales",
+    what: "How much unsold stock the company holds relative to what it sells. A key early warning in manufacturing.",
+    how: "Inventory on the balance sheet divided by annual sales.",
+    example: "£100m of stock against £1bn of sales is 0.10.",
+    scale: "Lower is leaner. Rising values mean stock is piling up faster than it's selling.",
+    alongside: "Days inventory and its direction. The change matters more than the level.",
+    breaks: "Only meaningful for businesses that hold physical stock. Meaningless for software or services, which is why Cycle only applies to some sectors.",
+  },
+  days_inventory: {
+    title: "Days inventory",
+    what: "How many days of sales the company is holding as unsold stock.",
+    how: "Inventory divided by the cost of goods sold over twelve months, multiplied by 365.",
+    example: "Stock worth 90 days of production cost means about three months of goods sitting in warehouses.",
+    scale: "Lower is leaner. What counts as normal varies enormously — chipmakers routinely hold more than retailers.",
+    alongside: "The change in days inventory, which is the more informative number. 94 days falling and 94 days rising mean opposite things.",
+    breaks: "The level alone is nearly useless without either the trend or a peer comparison.",
+  },
+  days_inventory_change: {
+    title: "Change in days inventory",
+    what: "Whether stock is building up or being drawn down compared with a year ago. In a cyclical business this is often the earliest signal of a turn.",
+    how: "Days inventory now, minus days inventory a year ago.",
+    example: "Falling from 120 to 94 days is a change of −26 days — stock clearing faster.",
+    scale: "Negative is better. Falling inventory alongside firm prices signals a tightening market; rising inventory signals a glut forming.",
+    alongside: "The level, and average selling prices. Falling stock with falling prices is demand collapsing, not tightening.",
+    breaks: "Needs a comparable period roughly a year back. If the reporting calendar shifted or history is missing, we show no value rather than compare the wrong periods.",
+  },
+  capacity_utilisation: {
+    title: "Capacity utilisation",
+    what: "How much of the factory is actually running. High utilisation means pricing power; low means price wars.",
+    how: "Output as a percentage of maximum possible output.",
+    example: "A plant running at 85% of what it could produce.",
+    scale: "Higher is better for the producer. Above 90% usually means prices can rise; below 70% usually means they fall.",
+    alongside: "Average selling prices, which is where utilisation shows up in the accounts.",
+    breaks: "Not reported in financial statements — it comes from industry surveys we don't currently have, so this metric is unavailable and reduces Cycle coverage.",
+  },
+  asp_change_yoy: {
+    title: "Average selling price change",
+    what: "Whether the company is getting more or less for each unit it sells than a year ago.",
+    how: "Average price per unit compared with a year earlier.",
+    example: "Prices up 4% year on year.",
+    scale: "Positive is better for the producer. In commodity industries this swings violently.",
+    alongside: "Capacity utilisation and inventory direction — together they describe the cycle.",
+    breaks: "Not in financial statements; needs industry data we don't have, so it's unavailable and reduces Cycle coverage.",
+  },
+  book_to_bill: {
+    title: "Book to bill",
+    what: "Whether new orders are arriving faster than existing ones are being shipped. Above 1 means the order book is growing.",
+    how: "Orders received divided by orders shipped in the same period.",
+    example: "A ratio of 1.1 means ten new orders for every nine shipped.",
+    scale: "Above 1 is expansion, below 1 contraction. Sustained readings matter more than one month.",
+    alongside: "Inventory direction. Rising orders with falling stock is a genuinely tightening market.",
+    breaks: "Not in financial statements; requires order-book disclosure we don't have, so it's unavailable and reduces Cycle coverage.",
+  },
+  // ------------------------------------------------------ context metrics
+  ebitda: {
+    title: "EBITDA",
+    what: "Profit before interest, tax, and the accounting charges for assets wearing out. A rough proxy for the cash a business throws off before financing decisions.",
+    how: "Operating profit with depreciation and amortisation added back.",
+    example: "£300m of operating profit plus £100m of depreciation is £400m of EBITDA.",
+    scale: "Bigger is better in absolute terms, but it's used mainly as the denominator in other ratios.",
+    alongside: "Free cash flow. EBITDA deliberately ignores the cost of replacing worn-out assets, which is a real cost.",
+    breaks: "Famously flattering. Charlie Munger called it 'bullshit earnings' because it ignores genuine expenses.",
+  },
+  fcf: {
+    title: "Free cash flow",
+    what: "The cash left over after running the business and paying for the equipment and property it needs. The money genuinely available to owners.",
+    how: "Cash from operations minus capital expenditure.",
+    example: "£400m from operations less £250m of capital spending is £150m free.",
+    scale: "Positive and growing is what you want. Negative may be investment or may be decline.",
+    alongside: "Net income. Persistent gaps between the two are worth understanding.",
+    breaks: "Lumpy for businesses with large investment cycles. A single year tells you little.",
+  },
+};
+
+export function explainerFor(metric: string): Explainer | null {
+  return EXPLAINERS[metric] ?? null;
+}

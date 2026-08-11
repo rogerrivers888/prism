@@ -4,6 +4,10 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { API_BASE_URL, API_BASE_URL_IS_DEFAULT } from "../api/config";
 import { LENSES, useUniverse, type LensName } from "../api/universe";
 import { LensBar, LensStrip } from "../components/LensBar";
+import { DispersionCell } from "../components/Dispersion";
+import { DrawerStack } from "../components/Drawer";
+import { UniverseAdmin, useUniverseHealth } from "../components/UniverseAdmin";
+import { AskClaude } from "../components/AskClaude";
 import { StalenessBanner } from "../components/StalenessBanner";
 import {
   filterRows,
@@ -30,6 +34,9 @@ export function Universe() {
   const [group, setGroup] = useState<GroupKey>("none");
   const [sectors, setSectors] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
+  const health = useUniverseHealth();
 
   const rows = data?.rows ?? [];
   const allSectors = useMemo(() => sectorsOf(rows), [rows]);
@@ -99,6 +106,23 @@ export function Universe() {
         </div>
 
         {data && <StalenessBanner asOf={data.as_of} staleDays={data.stale_days} />}
+
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+          <button type="button" onClick={() => setAdminOpen(true)}
+            className="rounded border border-border px-2 py-0.5 text-text-muted hover:text-text">
+            Manage universe
+          </button>
+          <button type="button" onClick={() => setAskOpen(true)}
+            className="rounded border border-border px-2 py-0.5 text-text-muted hover:text-text">
+            Ask Claude
+          </button>
+          {(health.data?.thin_sectors.length ?? 0) > 0 && (
+            <button type="button" onClick={() => setAdminOpen(true)} className="text-warning underline">
+              {health.data?.thin_sectors.length} sector
+              {health.data?.thin_sectors.length === 1 ? "" : "s"} below 8 peers — scoring on bands
+            </button>
+          )}
+        </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <input
@@ -197,11 +221,23 @@ export function Universe() {
         <button
           type="button"
           onClick={() => toggleSort("dispersion")}
-          className="w-20 shrink-0 text-right hover:text-text"
+          className="w-28 shrink-0 text-right hover:text-text"
         >
           Disp {sortKey === "dispersion" && (descending ? "▾" : "▴")}
         </button>
       </div>
+
+      <DrawerStack>
+        {adminOpen && <UniverseAdmin onClose={() => setAdminOpen(false)} />}
+        {askOpen && (
+          <AskClaude
+            context={{ screen: "universe", as_of: data?.as_of, showing: absolute ? "absolute" : "relative",
+              visible: items.filter((i) => i.kind === "row").slice(0, 25).map((i) => i.kind === "row" ? {
+                ticker: i.row.ticker, sector: i.row.sector, dispersion: i.row.dispersion } : null) }}
+            onClose={() => setAskOpen(false)}
+          />
+        )}
+      </DrawerStack>
 
       <div ref={scrollRef} className="flex-1 overflow-auto">
         <div
@@ -273,19 +309,12 @@ export function Universe() {
                   ))}
                 </div>
 
-                <div className="w-14 shrink-0 text-right lg:w-20">
-                  <span
-                    className="tabular text-sm"
-                    title={
-                      row.dispersion === null
-                        ? `fewer than 3 usable lenses (${row.usable_lenses ?? 0})`
-                        : undefined
-                    }
-                  >
-                    {row.dispersion === null || row.dispersion === undefined
-                      ? "—"
-                      : row.dispersion.toFixed(1)}
-                  </span>
+                <div className="w-20 shrink-0 text-right lg:w-28">
+                  <DispersionCell
+                    lenses={row.lenses}
+                    absolute={absolute}
+                    fallback={row.dispersion}
+                  />
                 </div>
               </div>
             );

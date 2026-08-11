@@ -1,10 +1,29 @@
 import { LENS_BAR_CLASS, type LensCell, type LensName } from "../api/universe";
 
-/** Opacity carries score alongside fill height, so a weak reading is quiet
- *  and a strong one is emphatic — without changing hue, which is reserved
- *  entirely for saying which lens this is. */
+/** Density carries score alongside fill length.
+ *
+ * Bar length alone does not survive scanning: at a glance, a 91 and a 7 in
+ * the same hue read as "some orange", and the eye has to measure. Varying
+ * opacity AND chroma with the score makes a high score visibly denser and a
+ * low one visibly washed out, so magnitude registers before you read the
+ * number.
+ *
+ * Hue is untouched — it still means only which lens this is, never a verdict.
+ * A weak value score is a pale version of the value hue, not a different
+ * colour and certainly not red. */
 function scoreOpacity(score: number): number {
-  return 0.4 + (Math.max(0, Math.min(100, score)) / 100) * 0.6;
+  return 0.32 + (clamp(score) / 100) * 0.68;
+}
+
+function clamp(score: number): number {
+  return Math.max(0, Math.min(100, score));
+}
+
+/** Chroma multiplier: low scores desaturate toward the surface, high scores
+ *  reach full chroma. Applied via a CSS filter so the hue variable stays the
+ *  single source of truth. */
+function scoreSaturation(score: number): number {
+  return 0.45 + (clamp(score) / 100) * 0.75;
 }
 
 type Props = {
@@ -65,7 +84,11 @@ export function LensBar({ lens, cell, absolute, compact = false }: Props) {
       <div className="relative h-5 flex-1 overflow-hidden rounded-sm bg-surface-sunken">
         <div
           className={`absolute inset-y-0 left-0 ${LENS_BAR_CLASS[lens]}`}
-          style={{ width, opacity: scoreOpacity(score) }}
+          style={{
+            width,
+            opacity: scoreOpacity(score),
+            filter: `saturate(${scoreSaturation(score)})`,
+          }}
         />
       </div>
       {!compact && (
