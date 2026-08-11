@@ -14,10 +14,30 @@ METRICS = (
         description="Return on invested capital, percent",
     ),
     MetricSpec(
+        name="gross_profitability",
+        higher_is_better=True,
+        bands=(
+            (0.0, 0), (0.10, 15), (0.15, 30), (0.20, 45), (0.33, 70), (0.45, 88), (0.60, 100)
+        ),
+        description=(
+            "Gross profit / total assets (Novy-Marx). Asset productivity, "
+            "comparable across industries: 0.33+ strong, 0.20-0.33 average, "
+            "under 0.15 weak"
+        ),
+    ),
+    MetricSpec(
         name="gross_margin",
         higher_is_better=True,
         bands=((10, 0), (20, 20), (30, 38), (40, 55), (50, 70), (65, 88), (80, 100)),
-        description="Gross margin, percent",
+        description=(
+            "Gross margin, percent. Display-only: pricing power is worth "
+            "seeing but varies by industry structure — software runs 80 and "
+            "manufacturing 40 — so scoring it would penalise manufacturers "
+            "for being manufacturers, most sharply on the absolute-band path "
+            "where sector percentiles are unavailable. Superseded for scoring "
+            "by gross_profitability, which is comparable across industries."
+        ),
+        scored=False,
     ),
     MetricSpec(
         name="net_debt_to_ebitda",

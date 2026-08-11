@@ -11,7 +11,11 @@ from statistics import fmean
 
 # Bump when a formula changes meaning. Old rows keep their old version rather
 # than being recomputed into something different under the same name.
-SCORING_VERSION = "v1"
+#
+# v2: quality gains gross_profitability (Novy-Marx) as a scored input and
+#     demotes gross_margin to display-only, which changes both the quality
+#     score and its coverage denominator.
+SCORING_VERSION = "v2"
 
 # A percentile against fewer peers than this is noise, so fall back to the
 # lens's declared absolute bands instead.
@@ -43,6 +47,12 @@ class MetricSpec:
     # financials. Declared on the metric rather than matched by name, so a
     # new EV or EBITDA ratio is guarded by its own declaration.
     ev_or_ebitda_derived: bool = False
+    # Display-only metrics (scored=False) are fetched, stored and returned so
+    # the UI can show them, but take no part in the score or the coverage
+    # denominator. For figures that are informative to a reader yet unfair to
+    # rank — typically because they vary by industry structure rather than by
+    # how good the business is. Their band table is inert while scored=False.
+    scored: bool = True
 
 
 @dataclass(frozen=True)
@@ -53,8 +63,17 @@ class Lens:
     combine: Callable[[Mapping[str, float]], float]
 
     @property
+    def scored_metrics(self) -> tuple[MetricSpec, ...]:
+        return tuple(m for m in self.metrics if m.scored)
+
+    @property
     def declared(self) -> tuple[str, ...]:
-        return tuple(m.name for m in self.metrics)
+        """Names that count towards coverage — display-only metrics do not."""
+        return tuple(m.name for m in self.scored_metrics)
+
+    @property
+    def display_only(self) -> tuple[str, ...]:
+        return tuple(m.name for m in self.metrics if not m.scored)
 
 
 def validate_bands(spec: MetricSpec) -> None:
@@ -124,6 +143,7 @@ class MetricOutcome:
     method: str | None = None
     peer_count: int | None = None
     excluded: str | None = None
+    scored: bool = True
 
     def as_dict(self) -> dict:
         return {
@@ -132,6 +152,7 @@ class MetricOutcome:
             "method": self.method,
             "peer_count": self.peer_count,
             "excluded": self.excluded,
+            "scored": self.scored,
         }
 
 

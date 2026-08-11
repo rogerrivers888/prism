@@ -31,7 +31,8 @@ BASELINE: dict[str, float] = {
     "fcf_growth_yoy": 9.0,
     # quality
     "roic": 12.0,
-    "gross_margin": 40.0,
+    "gross_profitability": 0.28,
+    "gross_margin": 40.0,  # display-only
     "net_debt_to_ebitda": 1.5,
     "interest_cover": 8.0,
     "fcf_conversion": 85.0,

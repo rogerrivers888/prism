@@ -28,6 +28,8 @@ class BandOut(BaseModel):
     higher_is_better: bool
     description: str
     ev_or_ebitda_derived: bool
+    # False for display-only metrics, whose band table is inert.
+    scored: bool
     # Ascending by value; scores interpolate linearly between breakpoints and
     # clamp outside them.
     breakpoints: list[tuple[float, float]]
@@ -77,6 +79,7 @@ async def get_bands() -> list[BandOut]:
             higher_is_better=spec.higher_is_better,
             description=spec.description,
             ev_or_ebitda_derived=spec.ev_or_ebitda_derived,
+            scored=spec.scored,
             breakpoints=[(float(v), float(s)) for v, s in spec.bands],
         )
         for lens in LENSES

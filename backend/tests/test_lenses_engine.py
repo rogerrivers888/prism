@@ -120,6 +120,7 @@ async def test_dispersion_null_when_fewer_than_three_lenses_usable(session):
             "price_to_book": 1.8,
             "dividend_yield": 3.0,
             "roic": 15.0,
+            "gross_profitability": 0.30,
             "gross_margin": 45.0,
             "net_debt_to_ebitda": 1.0,
             "interest_cover": 10.0,
@@ -214,7 +215,9 @@ async def test_bands_endpoint_exposes_every_band_table():
     from app.lenses.router import get_bands
 
     bands = await get_bands()
-    assert len(bands) == sum(len(lens.metrics) for lens in LENSES) == 28
+    assert len(bands) == sum(len(lens.metrics) for lens in LENSES) == 29
+    # Display-only metrics still publish their (inert) table for review.
+    assert {b.metric for b in bands if not b.scored} == {"gross_margin"}
     assert {b.lens for b in bands} == {lens.name for lens in LENSES}
     for band in bands:
         assert len(band.breakpoints) >= 2

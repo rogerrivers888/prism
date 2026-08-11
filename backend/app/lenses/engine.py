@@ -110,6 +110,7 @@ def evaluate_lens(
             inputs={
                 "sector": sector,
                 "declared": list(lens.declared),
+            "display_only": list(lens.display_only),
                 "reason": "lens_not_applicable_to_sector",
                 "metrics": {},
                 "flags": [],
@@ -122,6 +123,15 @@ def evaluate_lens(
     for spec in lens.metrics:
         excluded = guards.check(spec, sector, metrics)
         raw = metrics.get(spec.name)
+
+        if not spec.scored:
+            # Fetched and returned for the UI, never scored, and absent from
+            # the coverage denominator. The guard verdict is still recorded so
+            # a consumer knows whether the figure is meaningful for the sector.
+            outcomes[spec.name] = MetricOutcome(
+                value=raw, excluded=excluded, scored=False
+            )
+            continue
 
         if excluded is not None:
             # Excluded metrics reduce coverage rather than scoring zero.
@@ -146,7 +156,9 @@ def evaluate_lens(
         )
         subscores[spec.name] = subscore
 
-    declared = len(lens.metrics)
+    # Only scored metrics count: a display-only metric must not be able to
+    # dilute coverage by being absent, nor inflate it by being present.
+    declared = len(lens.scored_metrics)
     coverage = len(subscores) / declared if declared else 0.0
     score = lens.combine(subscores) if coverage >= MIN_COVERAGE and subscores else None
 
@@ -160,6 +172,7 @@ def evaluate_lens(
         inputs={
             "sector": sector,
             "declared": list(lens.declared),
+            "display_only": list(lens.display_only),
             "available": len(subscores),
             "metrics": {name: o.as_dict() for name, o in outcomes.items()},
             "flags": guards.flags(sector, metrics),

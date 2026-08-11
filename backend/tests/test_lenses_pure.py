@@ -106,7 +106,8 @@ def test_financials_exclude_ev_and_ebitda_metrics_but_keep_price_to_book(sector)
 
     quality_metrics = {
         "roic": 12.0,
-        "gross_margin": 40.0,
+        "gross_profitability": 0.28,
+        "gross_margin": 40.0,  # display-only, not in the denominator
         "net_debt_to_ebitda": 1.5,
         "interest_cover": 8.0,
         "fcf_conversion": 85.0,
@@ -161,13 +162,87 @@ def test_coverage_below_half_yields_null_score():
     assert result.inputs["withheld"] == "coverage_below_minimum"
 
 
-def test_coverage_exactly_half_still_scores():
-    metrics = {"roic": 12.0, "gross_margin": 40.0, "interest_cover": 8.0}
+def test_coverage_above_the_minimum_still_scores():
     from app.lenses import quality
 
+    metrics = {"roic": 12.0, "gross_profitability": 0.28, "interest_cover": 8.0}
     result = _score(quality.LENS, "industrials", metrics)
     assert result.coverage == pytest.approx(0.6)
     assert result.score is not None
+
+
+def test_display_only_metric_is_returned_but_never_scored():
+    from app.lenses import quality
+
+    metrics = {
+        "roic": 12.0,
+        "gross_profitability": 0.28,
+        "gross_margin": 82.0,  # display-only: a software-like margin
+        "net_debt_to_ebitda": 1.5,
+        "interest_cover": 8.0,
+        "fcf_conversion": 85.0,
+    }
+    result = _score(quality.LENS, "software", metrics)
+
+    entry = result.inputs["metrics"]["gross_margin"]
+    assert entry["value"] == 82.0  # fetched and returned for the UI
+    assert entry["scored"] is False
+    assert entry["score"] is None  # takes no part in the score
+    assert "gross_margin" not in result.inputs["declared"]
+    assert result.inputs["display_only"] == ["gross_margin"]
+    # Five scored inputs, all present.
+    assert result.coverage == pytest.approx(1.0)
+
+
+def test_display_only_metric_does_not_move_coverage_either_way():
+    from app.lenses import quality
+
+    scored_only = {
+        "roic": 12.0,
+        "gross_profitability": 0.28,
+        "net_debt_to_ebitda": 1.5,
+    }
+    without = _score(quality.LENS, "industrials", scored_only)
+    with_display = _score(quality.LENS, "industrials", dict(scored_only, gross_margin=40.0))
+
+    # Absent, it cannot dilute coverage; present, it cannot inflate it.
+    assert without.coverage == with_display.coverage == pytest.approx(0.6)
+    assert without.score == with_display.score
+
+
+def test_a_manufacturer_is_not_penalised_for_its_margin_structure():
+    # The point of the demotion: two businesses identical on every scored
+    # input but with structurally different gross margins must score the same.
+    from app.lenses import quality
+
+    base = {
+        "roic": 12.0,
+        "gross_profitability": 0.28,
+        "net_debt_to_ebitda": 1.5,
+        "interest_cover": 8.0,
+        "fcf_conversion": 85.0,
+    }
+    manufacturer = _score(quality.LENS, "industrials", dict(base, gross_margin=38.0))
+    software = _score(quality.LENS, "industrials", dict(base, gross_margin=81.0))
+
+    assert manufacturer.score == software.score
+    assert manufacturer.inputs["metrics"]["gross_margin"]["value"] == 38.0
+    assert software.inputs["metrics"]["gross_margin"]["value"] == 81.0
+
+
+def test_gross_profitability_bands_follow_the_novy_marx_thresholds():
+    from app.lenses import quality
+
+    spec = next(m for m in quality.LENS.metrics if m.name == "gross_profitability")
+    assert spec.scored is True
+    weak, average_low, strong = (
+        band_score(spec, 0.12),
+        band_score(spec, 0.22),
+        band_score(spec, 0.40),
+    )
+    assert weak < average_low < strong
+    assert band_score(spec, 0.15) < 50  # weak
+    assert band_score(spec, 0.33) >= 70  # strong
 
 
 def test_cycle_is_inapplicable_for_a_non_cyclical_sector():
