@@ -1,3 +1,5 @@
+from app.projections.decisions import Decision
+from app.projections.watchlist import WatchlistEntry
 from app.projections.positions import (
     Position,
     ProjectionState,
@@ -9,6 +11,8 @@ from app.projections.positions import (
 )
 
 __all__ = [
+    "Decision",
+    "WatchlistEntry",
     "Position",
     "ProjectionState",
     "apply",

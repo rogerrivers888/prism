@@ -7,6 +7,9 @@ from app.lenses.router import router as lenses_router
 from app.projections.router import dev_router as dev_projections_router
 from app.projections.router import router as positions_router
 from app.universe_router import router as universe_router
+from app.assistant_router import router as assistant_router
+from app.company_router import router as company_router
+from app.screens_router import book, decisions_router, research, screener, watchlist_router
 from app.worker.router import router as jobs_router
 
 app = FastAPI(title="Prism API")
@@ -22,6 +25,13 @@ app.add_middleware(
 
 app.include_router(positions_router)
 app.include_router(universe_router)
+app.include_router(company_router)
+app.include_router(screener)
+app.include_router(watchlist_router)
+app.include_router(research)
+app.include_router(book)
+app.include_router(decisions_router)
+app.include_router(assistant_router)
 app.include_router(lenses_router)
 app.include_router(jobs_router)
 

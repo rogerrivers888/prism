@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://prism:prism@localhost:5435/prism"
 
     eodhd_api_key: str = ""
+    # Ask Claude degrades to an explanatory empty state when unset.
+    anthropic_api_key: str = ""
     # The ALL-IN-ONE plan allows 100k/day, so this is no longer a hard
     # constraint — it stays as a safety rail against a runaway backfill loop
     # quietly burning the quota.

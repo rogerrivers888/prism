@@ -17,6 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
+from app.projections import decisions as decisions_projection
+from app.projections import watchlist as watchlist_projection
 from app.events import Event, read_all
 from app.events.payloads import StopMoved, TradeExecuted, payload_adapter
 
@@ -46,6 +48,9 @@ class Position(Base):
     opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(Text, nullable=False)
+    # Assigned on the opening trade, never inferred. Determines exit
+    # discipline: price stops for growth, time and thesis stops for value.
+    sleeve: Mapped[str | None] = mapped_column(Text)
     last_event_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
 
@@ -63,7 +68,11 @@ class ProjectionState(Base):
 
 async def apply(session: AsyncSession, event: Event) -> None:
     """Apply one event to the positions read model."""
-    if event.event_type == "StreamVoided":
+    if event.event_type.startswith("Watchlist"):
+        await watchlist_projection.apply(session, event)
+    elif event.event_type.startswith("Decision"):
+        await decisions_projection.apply(session, event)
+    elif event.event_type == "StreamVoided":
         await _apply_void(session, event)
     elif event.event_type in ("TradeExecuted", "StopMoved"):
         # A voided stream produces no position at all — checked against the
@@ -152,6 +161,7 @@ async def _apply_trade(session: AsyncSession, event: Event) -> None:
                 current_risk=initial_risk,
                 currency=payload.currency,
                 opened_at=event.occurred_at,
+                sleeve=payload.sleeve,
                 status="open",
                 last_event_id=event.id,
             )
