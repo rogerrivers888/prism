@@ -1,0 +1,107 @@
+@import "tailwindcss";
+@import "./styles/lens-hues.css";
+
+/* Self-hosted, bundled at build time — no Google Fonts CDN, no third-party
+   request on every page load. */
+@import "@fontsource/barlow-condensed/400.css";
+@import "@fontsource/barlow-condensed/600.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/* Dark mode is driven by a class on <html>, set by the theme provider, so a
+   manual override can beat the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantic tokens. Components reference these, never a raw colour.
+ *
+ * Every text/background pair below is checked against WCAG AA in
+ * src/theme/contrast.test.ts — muted text on a raised surface was the pair
+ * the previous prototype failed, so it is asserted explicitly rather than
+ * eyeballed. */
+:root {
+  --surface: oklch(98.5% 0.003 250);
+  --surface-raised: oklch(100% 0 0);
+  --surface-sunken: oklch(95.5% 0.005 250);
+  --border: oklch(88% 0.008 250);
+  --border-strong: oklch(78% 0.012 250);
+  --text: oklch(24% 0.012 250);
+  --text-muted: oklch(46% 0.014 250);
+
+  --positive: oklch(52% 0.14 155);
+  --negative: oklch(53% 0.17 25);
+  --warning: oklch(58% 0.14 75);
+
+  --focus: oklch(55% 0.17 250);
+}
+
+.dark {
+  --surface: oklch(19% 0.012 255);
+  --surface-raised: oklch(23.5% 0.014 255);
+  --surface-sunken: oklch(15% 0.01 255);
+  --border: oklch(32% 0.016 255);
+  --border-strong: oklch(42% 0.02 255);
+  --text: oklch(95% 0.006 255);
+  /* Deliberately light: this is the pair that failed before. */
+  --text-muted: oklch(76% 0.014 255);
+
+  --positive: oklch(76% 0.15 155);
+  --negative: oklch(70% 0.16 25);
+  --warning: oklch(80% 0.13 75);
+
+  --focus: oklch(72% 0.15 250);
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-focus: var(--focus);
+
+  --color-lens-trend: var(--lens-trend);
+  --color-lens-growth: var(--lens-growth);
+  --color-lens-quality: var(--lens-quality);
+  --color-lens-value: var(--lens-value);
+  --color-lens-momentum: var(--lens-momentum);
+  --color-lens-cycle: var(--lens-cycle);
+
+  --font-display: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--surface);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Every number in this product is read in a column and compared to the
+     number above it, so figures must not shift width as digits change. */
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}

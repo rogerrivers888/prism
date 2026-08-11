@@ -1,0 +1,47 @@
+/* The six lens hues.
+ *
+ * Hue angle is the ONLY thing that varies. Lightness and chroma are held
+ * constant per theme so no lens reads as louder or more important than
+ * another — a brighter colour would be an editorial claim we have no basis
+ * for making.
+ *
+ * Colour does exactly one job here: hue identifies which lens. Score is
+ * carried by bar fill and opacity, never by hue. In particular there is no
+ * green-good / red-bad on lens scores: it would collide with these hues and
+ * with P&L colouring later.
+ *
+ * Roger judges these on sight. To retune, change the angles below and
+ * nothing else — every component reads the variables.
+ */
+
+:root {
+  /* Angles spaced around the wheel, nudged off the exact 60° grid to avoid
+     the muddy yellow-green and to keep adjacent lenses distinguishable. */
+  --hue-value: 68; /* gold     */
+  --hue-growth: 142; /* green    */
+  --hue-cycle: 192; /* cyan     */
+  --hue-quality: 246; /* blue     */
+  --hue-trend: 296; /* violet   */
+  --hue-momentum: 338; /* magenta  */
+
+  /* Constant lightness and chroma for the light theme. */
+  --lens-l: 55%;
+  --lens-c: 0.16;
+}
+
+.dark {
+  /* Lifted and slightly desaturated so the same hues hold their identity on
+     a dark surface without glowing. Still constant across all six. */
+  --lens-l: 72%;
+  --lens-c: 0.14;
+}
+
+:root,
+.dark {
+  --lens-trend: oklch(var(--lens-l) var(--lens-c) var(--hue-trend));
+  --lens-growth: oklch(var(--lens-l) var(--lens-c) var(--hue-growth));
+  --lens-quality: oklch(var(--lens-l) var(--lens-c) var(--hue-quality));
+  --lens-value: oklch(var(--lens-l) var(--lens-c) var(--hue-value));
+  --lens-momentum: oklch(var(--lens-l) var(--lens-c) var(--hue-momentum));
+  --lens-cycle: oklch(var(--lens-l) var(--lens-c) var(--hue-cycle));
+}
