@@ -17,6 +17,7 @@ how old the numbers actually are.
 
 import asyncio
 import logging
+import os
 import sys
 from datetime import UTC, date, datetime
 
@@ -215,19 +216,41 @@ async def main() -> int:
     factory = async_sessionmaker(engine, expire_on_commit=False)
 
     try:
+        try:
+            async with factory() as probe:
+                await probe.execute(select(1))
+        except Exception as exc:  # noqa: BLE001
+            # Without this, an unset DATABASE_URL silently falls back to the
+            # local development default and surfaces as a forty-line asyncpg
+            # traceback about localhost — which says nothing about the actual
+            # cause. Name the variable instead.
+            if not os.environ.get("DATABASE_URL"):
+                logger.error(
+                    "DATABASE_URL is not set, so the local development default "
+                    "was used and no database was reachable. On Railway, set "
+                    "DATABASE_URL=${{Postgres.DATABASE_URL}} on this service."
+                )
+            else:
+                logger.error("could not reach the database: %s", exc)
+            return 1
+
         async with factory() as session:
             if await runs.succeeded_today(session, JOB_NAME, run_date):
                 logger.info("daily: already succeeded for %s, nothing to do", run_date)
                 return 0
 
-            if not settings.eodhd_api_key:
-                raise RuntimeError("EODHD_API_KEY is not configured")
-
+            # Recorded before configuration is validated, so a missing API key
+            # shows up in /jobs as a failed run rather than vanishing without
+            # a trace — the earlier ordering raised before anything was written.
             record = await runs.start(session, JOB_NAME, run_date)
             await session.commit()
-            provider = EODHDProvider(settings.eodhd_api_key)
 
             try:
+                if not settings.eodhd_api_key:
+                    raise RuntimeError(
+                        "EODHD_API_KEY is not set on this service"
+                    )
+                provider = EODHDProvider(settings.eodhd_api_key)
                 tally = await run(session, provider, run_date)
             except Exception as exc:  # noqa: BLE001
                 await session.rollback()

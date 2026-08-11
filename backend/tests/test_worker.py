@@ -108,3 +108,22 @@ def test_provider_ticker_routing(symbol, exchange, expected):
     from app.ingest.universe import provider_ticker
 
     assert provider_ticker(symbol, exchange) == expected
+
+
+async def test_missing_api_key_is_recorded_as_a_failed_run(session, monkeypatch):
+    """A config error must be visible in /jobs, not vanish before the record."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "eodhd_api_key", "")
+    record = await runs.start(session, JOB_NAME, RUN_DATE)
+    await session.commit()
+
+    # The run is recorded first, so whatever fails next has somewhere to land.
+    tally = runs.RunTally(failures={"_fatal": "RuntimeError: EODHD_API_KEY is not set"})
+    await runs.finish(session, record, runs.FAILED, tally)
+    await session.commit()
+
+    latest = (await runs.latest(session, job=JOB_NAME))[0]
+    assert latest.status == runs.FAILED
+    assert "EODHD_API_KEY" in latest.failures["_fatal"]
+    assert await runs.succeeded_today(session, JOB_NAME, RUN_DATE) is False
