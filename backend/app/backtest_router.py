@@ -16,7 +16,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.backtest import Costs, run_pre_earnings
+from app.backtest import Costs, public, run_pre_earnings
+from app.backtest_segments import run_segmented
 from app.db import Base, get_session
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
@@ -67,6 +68,7 @@ async def post_pre_earnings(body: PreEarningsRequest, session: SessionDep) -> di
         ),
         variants_tested=body.variants_tested,
     )
+    result = public(result)
     if body.persist:
         session.add(
             BacktestRun(
@@ -130,7 +132,7 @@ async def post_sweep(body: SweepRequest, session: SessionDep) -> dict:
             BacktestRun(
                 strategy=result["strategy"],
                 params=result["params"],
-                results=result,
+                results=public(result),
                 variants_tested=len(combos),
             )
         )
@@ -191,3 +193,45 @@ async def get_run(run_id: int, session: SessionDep) -> dict:
     if row is None:
         raise HTTPException(status_code=404, detail=f"no run {run_id}")
     return row.results
+
+
+class SegmentRequest(BaseModel):
+    enter_days_before: int = Field(default=10, ge=1, le=60)
+    exit_days_before: int = Field(default=2, ge=0, le=59)
+    start: date = date(2010, 1, 1)
+    end: date = date(2026, 8, 1)
+    spread_bps: float = 10.0
+    commission_bps: float = 5.0
+
+
+@router.post("/pre-earnings/segments")
+async def post_segments(body: SegmentRequest, session: SessionDep) -> dict:
+    """Sector, size and froth breakdowns, each against its own drift control.
+
+    Slow: one full backtest plus a bootstrap per segment. The multiple-
+    comparison correction is computed across every segment in the response,
+    so calling this and reading one row is not the same as testing one thing.
+    """
+    if body.enter_days_before <= body.exit_days_before:
+        raise HTTPException(
+            status_code=422,
+            detail="enter_days_before must be greater than exit_days_before",
+        )
+    result = await run_segmented(
+        session,
+        enter_days_before=body.enter_days_before,
+        exit_days_before=body.exit_days_before,
+        start=body.start,
+        end=body.end,
+        costs=Costs(spread_bps=body.spread_bps, commission_bps=body.commission_bps),
+    )
+    session.add(
+        BacktestRun(
+            strategy="pre_earnings_segmented",
+            params=result.get("params", {}),
+            results=result,
+            variants_tested=result.get("segment_tests_run", 1),
+        )
+    )
+    await session.commit()
+    return result

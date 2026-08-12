@@ -131,3 +131,65 @@ export function useEarnings(ticker: string | undefined) {
     },
   });
 }
+
+export type Segment = {
+  family: string;
+  segment: string;
+  trades: number;
+  mean_return_pct: number;
+  median_return_pct: number;
+  win_rate: number;
+  drift_pct: number;
+  excess_pct: number;
+  p5: number;
+  p95: number;
+  p_value: number;
+  underpowered: boolean;
+  significant_uncorrected: boolean;
+  significant_fdr: boolean;
+  significant_bonferroni: boolean;
+};
+
+export type SegmentsResult = {
+  pooled: { trades: number; mean_return_pct: number; excess_over_drift_pct: number | null };
+  holding_days: number;
+  control_pool: { tickers: number; draws_each: number };
+  unclassified: Record<string, number>;
+  segment_tests_run: number;
+  correction: {
+    uncorrected_alpha: number;
+    bonferroni_alpha: number;
+    method: string;
+    significant_uncorrected: number;
+    significant_fdr: number;
+    significant_bonferroni: number;
+    expected_false_positives_uncorrected: number;
+  };
+  segments: Segment[];
+  neighbour_agreement: Record<
+    string,
+    {
+      excess_pct: number;
+      neighbours_checked: string[];
+      neighbours_agreeing: string[];
+      neighbour_mean_excess_pct: number | null;
+      isolated: boolean;
+    }
+  >;
+  best_positive_segment: Segment | null;
+  underpowered_segments: string[];
+};
+
+export function useRunSegments() {
+  return useMutation<SegmentsResult, Error, Omit<Params, "spread_bps" | "commission_bps"> & { spread_bps: number; commission_bps: number }>({
+    mutationFn: async (body) => {
+      const response = await fetch(`${API_BASE_URL}/backtest/pre-earnings/segments`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error((await response.json()).detail ?? "segmentation failed");
+      return response.json();
+    },
+  });
+}

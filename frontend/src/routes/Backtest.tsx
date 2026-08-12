@@ -1,10 +1,13 @@
 import { useState } from "react";
 import {
   useRunBacktest,
+  useRunSegments,
   useRunSweep,
   type BacktestResult,
   type Caveat,
   type Params,
+  type Segment,
+  type SegmentsResult,
   type SweepResult,
 } from "../api/backtest";
 
@@ -291,6 +294,128 @@ function SweepTable({ sweep }: { sweep: SweepResult }) {
   );
 }
 
+const FAMILY_LABEL: Record<string, string> = {
+  sector: "Sector",
+  market_cap_quintile: "Market cap quintile",
+  lens_dispersion: "Lens disagreement",
+  valuation_premium: "Valuation premium vs sector",
+  priced_for_perfection: "Priced for perfection",
+  realised_vol_quintile: "Realised volatility quintile",
+};
+
+function SegmentRow({ row }: { row: Segment }) {
+  return (
+    <tr className="border-b border-border/50">
+      <td className="py-1 pr-2">
+        {row.segment}
+        {row.underpowered ? (
+          <span className="ml-2 font-mono text-[10px] uppercase text-muted">underpowered</span>
+        ) : null}
+      </td>
+      {/* Sample size sits next to the name, not at the end, because it is the
+          first thing that decides whether the rest of the row means anything. */}
+      <td className={`py-1 text-right font-mono tabular-nums ${row.underpowered ? "text-muted" : "text-fg"}`}>
+        {row.trades.toLocaleString()}
+      </td>
+      <td className="py-1 text-right font-mono tabular-nums text-muted">{pct(row.drift_pct)}</td>
+      <td className={`py-1 text-right font-mono tabular-nums ${row.underpowered ? "text-muted" : "text-fg"}`}>
+        {pct(row.excess_pct)}
+      </td>
+      <td className="py-1 text-right font-mono text-xs tabular-nums text-muted">
+        {pct(row.p5)} {pct(row.p95)}
+      </td>
+      <td className="py-1 text-right font-mono text-xs tabular-nums text-muted">
+        {row.p_value.toFixed(4)}
+      </td>
+      <td className="py-1 pl-2 text-right font-mono text-[10px] uppercase tracking-wider">
+        {row.significant_bonferroni ? (
+          <span className="text-fg">bonf</span>
+        ) : row.significant_fdr ? (
+          <span className="text-fg">fdr</span>
+        ) : row.significant_uncorrected ? (
+          <span className="text-muted">uncorr only</span>
+        ) : (
+          <span className="text-muted">—</span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function Segments({ result }: { result: SegmentsResult }) {
+  const families = Array.from(new Set(result.segments.map((s) => s.family)));
+  const { correction: c } = result;
+  const isolated = Object.entries(result.neighbour_agreement).filter(([, v]) => v.isolated);
+
+  return (
+    <div className="space-y-5">
+      {/* The count of tests leads. Reading one row out of thirty as if it were
+          one test is the failure mode this whole screen exists to prevent. */}
+      <div className="border-l-4 border-l-warn bg-warn/10 px-4 py-3 text-sm">
+        <div className="font-medium text-fg">{result.segment_tests_run} segment tests were run</div>
+        <p className="mt-1 text-muted">
+          At an uncorrected 5% threshold, roughly{" "}
+          {c.expected_false_positives_uncorrected} of them would look significant by chance alone.{" "}
+          {c.significant_uncorrected} did. After Benjamini-Hochberg FDR control,{" "}
+          {c.significant_fdr} survive; at Bonferroni ({c.bonferroni_alpha.toFixed(5)}),{" "}
+          {c.significant_bonferroni} do. Any single row below is one of{" "}
+          {result.segment_tests_run}, not one test.
+        </p>
+      </div>
+
+      {isolated.length ? (
+        <div className="border-l-4 border-l-warn bg-warn/10 px-4 py-3 text-sm">
+          <div className="font-medium text-fg">
+            Positive but isolated: {isolated.map(([name]) => name).join(", ")}
+          </div>
+          <p className="mt-1 text-muted">
+            No adjacent sector agrees in sign. A real effect in one sector should echo, weaker, in
+            its neighbours; one that appears in exactly one place and nowhere next door is noise
+            wearing a sector label.
+          </p>
+        </div>
+      ) : null}
+
+      {families.map((family) => (
+        <div key={family}>
+          <h4 className="mb-1 font-mono text-[10px] uppercase tracking-wider text-muted">
+            {FAMILY_LABEL[family] ?? family}
+          </h4>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left font-mono text-[10px] uppercase tracking-wider text-muted">
+                <th className="py-1">Segment</th>
+                <th className="py-1 text-right">Trades</th>
+                <th className="py-1 text-right">Drift</th>
+                <th className="py-1 text-right">Excess</th>
+                <th className="py-1 text-right">90% band</th>
+                <th className="py-1 text-right">p</th>
+                <th className="py-1 pl-2 text-right">Survives</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.segments
+                .filter((s) => s.family === family)
+                .sort((a, b) => b.excess_pct - a.excess_pct)
+                .map((row) => (
+                  <SegmentRow key={`${row.family}-${row.segment}`} row={row} />
+                ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+
+      <p className="border-t border-border pt-3 text-xs text-muted">
+        Each segment is compared against a control drawn from the same names that produced its
+        trades ({result.control_pool.tickers} tickers, {result.control_pool.draws_each} random{" "}
+        {result.holding_days}-day holds each), so a volatile segment is not credited for being
+        volatile. Market-cap quintiles use today's market cap, not the cap at the time of each
+        trade — that is a known limitation, and it biases toward classifying past winners as large.
+      </p>
+    </div>
+  );
+}
+
 const DEFAULTS: Params = {
   enter_days_before: 10,
   exit_days_before: 2,
@@ -331,6 +456,7 @@ export default function Backtest() {
   const [params, setParams] = useState<Params>(DEFAULTS);
   const run = useRunBacktest();
   const sweep = useRunSweep();
+  const segments = useRunSegments();
 
   const set = (key: keyof Params) => (value: string) =>
     setParams((previous) => ({
@@ -407,15 +533,26 @@ export default function Backtest() {
         >
           {sweep.isPending ? "Sweeping…" : "Sweep 6 variants"}
         </button>
+        <button
+          type="button"
+          disabled={invalid || segments.isPending}
+          onClick={() => segments.mutate(params)}
+          className="border border-border px-4 py-2 text-sm text-fg disabled:opacity-40"
+        >
+          {segments.isPending ? "Segmenting…" : "Segment by sector, size and froth"}
+        </button>
       </div>
 
-      {run.isPending || sweep.isPending ? (
+      {run.isPending || sweep.isPending || segments.isPending ? (
         <p className="text-sm text-muted">
           Walking every ticker's price history. This takes a minute or two.
         </p>
       ) : null}
       {run.error ? <p className="text-sm text-warn">{run.error.message}</p> : null}
       {sweep.error ? <p className="text-sm text-warn">{sweep.error.message}</p> : null}
+      {segments.error ? <p className="text-sm text-warn">{segments.error.message}</p> : null}
+
+      {segments.data ? <Segments result={segments.data} /> : null}
 
       {sweep.data ? <SweepTable sweep={sweep.data} /> : null}
       {run.data ? <Results result={run.data} /> : null}

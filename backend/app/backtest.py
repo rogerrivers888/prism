@@ -463,7 +463,16 @@ async def run_pre_earnings(
         # Attached to the result, not to a footnote. A caller that renders the
         # numbers without these is misrepresenting them.
         "caveats": caveats(overall, boot, variants_tested, control),
+        # Private: the trade objects themselves, so segmentation can reuse a
+        # run rather than repeat it. Stripped by public() before serialisation.
+        "_trades": trades,
     }
+
+
+def public(result: dict) -> dict:
+    """Drop private keys. Anything underscore-prefixed is internal plumbing
+    and is not JSON-serialisable."""
+    return {key: value for key, value in result.items() if not key.startswith("_")}
 
 
 def excess_significance(
