@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import earnings as earnings_module
 from app.db import get_session
 from app.fundamentals import Security
 from app.lenses.base import SCORING_VERSION
@@ -58,6 +59,9 @@ class UniverseRow(BaseModel):
     market_cap: float | None
     dispersion: float | None
     usable_lenses: int | None
+    # Null when no future report date is on file, which is not the same as
+    # "no earnings coming" — it means we have not observed one yet.
+    days_to_earnings: int | None
     lenses: dict[str, LensCell]
 
 
@@ -118,6 +122,11 @@ async def get_universe(session: SessionDep, as_of: date | None = None) -> Univer
         )
         spreads = {r.ticker: r for r in spread_rows.scalars()}
 
+    # One query for the whole set rather than one per row.
+    countdown = await earnings_module.days_to_earnings(
+        session, [s.ticker for s in securities]
+    )
+
     out = []
     for security in securities:
         spread = spreads.get(security.ticker)
@@ -141,6 +150,7 @@ async def get_universe(session: SessionDep, as_of: date | None = None) -> Univer
                     else None
                 ),
                 usable_lenses=spread.usable_lenses if spread else None,
+                days_to_earnings=countdown.get(security.ticker),
                 lenses=scores.get(security.ticker, {}),
             )
         )

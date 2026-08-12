@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.fundamentals import Fundamental, PriceDaily, Security
 from app.ingest import archive as archive_module
 from app.ingest import consensus as consensus_module
+from app import earnings as earnings_module
 from app.ingest.budget import CallBudget
 from app.ingest.mapping import UnmappedSector
 from app.ingest.protocol import MarketDataProvider
@@ -308,6 +309,9 @@ async def sync_fundamentals(
     # costs nothing. Appended with today's date, never overwriting yesterday.
     observations = await consensus_module.store(
         session, provider.parse_consensus(symbol, payload, date.today())
+    )
+    await earnings_module.store(
+        session, provider.parse_earnings(symbol, payload, date.today())
     )
     if observations:
         result.notes.append(f"{observations} consensus observations recorded")

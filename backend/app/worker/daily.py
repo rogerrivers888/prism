@@ -28,6 +28,7 @@ from app.config import settings
 from app.fundamentals import Security
 from app.ingest import archive as archive_module
 from app.ingest import consensus as consensus_module
+from app import earnings as earnings_module
 from app.ingest.budget import BudgetExceeded, CallBudget
 from app.ingest.consensus import ConsensusEstimate
 from app.ingest.eodhd import EODHDProvider
@@ -109,6 +110,10 @@ async def _persist_one(
     # Its presence is also this ticker's done-marker for today.
     await consensus_module.store(
         session, provider.parse_consensus(symbol, fundamentals.payload, run_date)
+    )
+    # Re-observed nightly so the drift of a forecast date is itself recorded.
+    await earnings_module.store(
+        session, provider.parse_earnings(symbol, fundamentals.payload, run_date)
     )
     await session.flush()
 

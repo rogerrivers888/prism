@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.fundamentals import PriceDaily, Security
 from app.ingest import archive as archive_module
 from app.ingest import consensus as consensus_module
+from app import earnings as earnings_module
 from app.ingest.budget import BudgetExceeded, CallBudget
 from app.ingest.jobs import _upsert_fundamentals, _upsert_security, bare
 from app.ingest.mapping import UnmappedSector
@@ -225,6 +226,9 @@ async def _persist(
 
     report.consensus_rows += await consensus_module.store(
         session, provider.parse_consensus(symbol, fundamentals.payload, date.today())
+    )
+    await earnings_module.store(
+        session, provider.parse_earnings(symbol, fundamentals.payload, date.today())
     )
 
     bars = provider.parse_prices(symbol, prices.payload)

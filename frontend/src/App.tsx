@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import Backtest from "./routes/Backtest";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Shell } from "./components/Shell";
 import { Universe } from "./routes/Universe";
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="/research" element={<Research />} />
               <Route path="/book" element={<Book />} />
               <Route path="/decisions" element={<Decisions />} />
+              <Route path="/backtest" element={<Backtest />} />
             </Route>
           </Routes>
         </BrowserRouter>

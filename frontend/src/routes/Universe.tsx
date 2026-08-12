@@ -29,6 +29,9 @@ export function Universe() {
   // Dispersion descending by default: where the methodologies disagree is
   // the research question, so it leads.
   const [sortKey, setSortKey] = useState<SortKey>("dispersion");
+  // Off by default: it is useful when hunting a catalyst and pure clutter
+  // the rest of the time.
+  const [showEarnings, setShowEarnings] = useState(false);
   const [descending, setDescending] = useState(true);
   const [absolute, setAbsolute] = useState(false);
   const [group, setGroup] = useState<GroupKey>("none");
@@ -157,6 +160,15 @@ export function Universe() {
           </div>
 
           <label className="flex items-center gap-1 text-xs text-text-muted">
+            <input
+              type="checkbox"
+              checked={showEarnings}
+              onChange={(event) => setShowEarnings(event.target.checked)}
+            />
+            Earnings
+          </label>
+
+          <label className="flex items-center gap-1 text-xs text-text-muted">
             Group
             <select
               value={group}
@@ -224,6 +236,14 @@ export function Universe() {
           className="w-28 shrink-0 text-right hover:text-text"
         >
           Disp {sortKey === "dispersion" && (descending ? "▾" : "▴")}
+        </button>
+        <button
+          type="button"
+          hidden={!showEarnings}
+          onClick={() => toggleSort("earnings")}
+          className="hidden w-14 text-right font-mono text-[10px] uppercase tracking-wider text-muted md:block"
+        >
+          Earn {sortKey === "earnings" && (descending ? "▾" : "▴")}
         </button>
       </div>
 
@@ -308,6 +328,18 @@ export function Universe() {
                     </div>
                   ))}
                 </div>
+
+                {showEarnings ? (
+                  <div className="hidden w-14 shrink-0 text-right md:block">
+                    {row.days_to_earnings === null || row.days_to_earnings === undefined ? (
+                      <span className="tabular text-xs text-text-muted" title="No future report date on file">
+                        —
+                      </span>
+                    ) : (
+                      <span className="tabular text-xs">{row.days_to_earnings}d</span>
+                    )}
+                  </div>
+                ) : null}
 
                 <div className="w-20 shrink-0 text-right lg:w-28">
                   <DispersionCell

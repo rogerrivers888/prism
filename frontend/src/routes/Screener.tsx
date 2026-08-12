@@ -17,6 +17,7 @@ export function Screener() {
   const [absolute, setAbsolute] = useState(false);
   const [lensRanges, setLensRanges] = useState<Record<string, Range>>({});
   const [capRange, setCapRange] = useState<Range>(EMPTY);
+  const [earningsRange, setEarningsRange] = useState<Range>(EMPTY);
   const [sectors, setSectors] = useState<Set<string>>(new Set());
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
 
@@ -31,6 +32,16 @@ export function Screener() {
       const cap = row.market_cap ? row.market_cap / 1e9 : null;
       if (capRange.min !== null && (cap === null || cap < capRange.min)) return false;
       if (capRange.max !== null && (cap === null || cap > capRange.max)) return false;
+
+      // A row with no known report date is excluded whenever the filter is
+      // active. It cannot satisfy a window we have no date for, and treating
+      // unknown as "passes" would quietly pad the result with names that
+      // happen to be missing data.
+      const days = row.days_to_earnings;
+      if (earningsRange.min !== null && (days === null || days === undefined || days < earningsRange.min))
+        return false;
+      if (earningsRange.max !== null && (days === null || days === undefined || days > earningsRange.max))
+        return false;
       for (const [lens, range] of Object.entries(lensRanges)) {
         if (range.min === null && range.max === null) continue;
         const cell = row.lenses[lens];
@@ -41,7 +52,7 @@ export function Screener() {
       }
       return true;
     });
-  }, [rows, sectors, capRange, lensRanges, absolute, excluded]);
+  }, [rows, sectors, capRange, earningsRange, lensRanges, absolute, excluded]);
 
   const setRange = (lens: string, key: "min" | "max", raw: string) =>
     setLensRanges((current) => ({
@@ -86,6 +97,16 @@ export function Screener() {
               className="tabular h-7 w-full rounded border border-border bg-surface-raised px-1" />
             <input type="number" placeholder="max" aria-label="market cap maximum"
               onChange={(e) => setCapRange((c) => ({ ...c, max: e.target.value === "" ? null : Number(e.target.value) }))}
+              className="tabular h-7 w-full rounded border border-border bg-surface-raised px-1" />
+          </label>
+
+          <label className="flex items-center gap-1 text-xs">
+            <span className="w-16 shrink-0 text-text-muted">earn days</span>
+            <input type="number" placeholder="min" aria-label="days to earnings minimum"
+              onChange={(e) => setEarningsRange((c) => ({ ...c, min: e.target.value === "" ? null : Number(e.target.value) }))}
+              className="tabular h-7 w-full rounded border border-border bg-surface-raised px-1" />
+            <input type="number" placeholder="max" aria-label="days to earnings maximum"
+              onChange={(e) => setEarningsRange((c) => ({ ...c, max: e.target.value === "" ? null : Number(e.target.value) }))}
               className="tabular h-7 w-full rounded border border-border bg-surface-raised px-1" />
           </label>
         </div>

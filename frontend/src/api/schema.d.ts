@@ -614,6 +614,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/earnings/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Earnings */
+        get: operations["get_earnings_earnings__ticker__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backtest/pre-earnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Pre Earnings */
+        post: operations["post_pre_earnings_backtest_pre_earnings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backtest/pre-earnings/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Sweep */
+        post: operations["post_sweep_backtest_pre_earnings_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backtest/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Runs */
+        get: operations["list_runs_backtest_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backtest/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Run */
+        get: operations["get_run_backtest_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dev/events": {
         parameters: {
             query?: never;
@@ -1022,6 +1107,49 @@ export interface components {
             /** Closed At */
             closed_at: string | null;
         };
+        /** EarningsOut */
+        EarningsOut: {
+            /** Ticker */
+            ticker: string;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Next Report Date */
+            next_report_date: string | null;
+            /** Next Is Estimated */
+            next_is_estimated: boolean | null;
+            /** Days To Earnings */
+            days_to_earnings: number | null;
+            /** History */
+            history: components["schemas"]["EarningsRow"][];
+        };
+        /** EarningsRow */
+        EarningsRow: {
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /** Report Date */
+            report_date: string | null;
+            /** Is Estimated */
+            is_estimated: boolean;
+            /** Before After Market */
+            before_after_market: string | null;
+            /** Eps Estimate */
+            eps_estimate: number | null;
+            /** Eps Actual */
+            eps_actual: number | null;
+            /** Surprise Percent */
+            surprise_percent: number | null;
+            /**
+             * Observed On
+             * Format: date
+             */
+            observed_on: string;
+        };
         /** EventOut */
         EventOut: {
             /** Id */
@@ -1291,6 +1419,61 @@ export interface components {
             /** Stress Test */
             stress_test?: string | null;
         };
+        /** PreEarningsRequest */
+        PreEarningsRequest: {
+            /**
+             * Enter Days Before
+             * @default 10
+             */
+            enter_days_before: number;
+            /**
+             * Exit Days Before
+             * @default 2
+             */
+            exit_days_before: number;
+            /**
+             * Start
+             * Format: date
+             * @default 2010-01-01
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             * @default 2026-08-01
+             */
+            end: string;
+            /**
+             * Spread Bps
+             * @default 10
+             */
+            spread_bps: number;
+            /**
+             * Commission Bps
+             * @default 5
+             */
+            commission_bps: number;
+            /**
+             * Funding Annual Pct
+             * @default 0
+             */
+            funding_annual_pct: number;
+            /**
+             * Leveraged
+             * @default false
+             */
+            leveraged: boolean;
+            /**
+             * Variants Tested
+             * @default 1
+             */
+            variants_tested: number;
+            /**
+             * Persist
+             * @default true
+             */
+            persist: boolean;
+        };
         /** SavedScreenIn */
         SavedScreenIn: {
             /** Name */
@@ -1330,6 +1513,48 @@ export interface components {
             median_relative_premium: number | null;
             /** Member Count */
             member_count: number;
+        };
+        /** SweepRequest */
+        SweepRequest: {
+            /**
+             * Enter Days
+             * @default [
+             *       5,
+             *       10,
+             *       20
+             *     ]
+             */
+            enter_days: number[];
+            /**
+             * Exit Days
+             * @default [
+             *       1,
+             *       3
+             *     ]
+             */
+            exit_days: number[];
+            /**
+             * Start
+             * Format: date
+             * @default 2010-01-01
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             * @default 2026-08-01
+             */
+            end: string;
+            /**
+             * Spread Bps
+             * @default 10
+             */
+            spread_bps: number;
+            /**
+             * Commission Bps
+             * @default 5
+             */
+            commission_bps: number;
         };
         /** TradeIn */
         TradeIn: {
@@ -1403,6 +1628,8 @@ export interface components {
             dispersion: number | null;
             /** Usable Lenses */
             usable_lenses: number | null;
+            /** Days To Earnings */
+            days_to_earnings: number | null;
             /** Lenses */
             lenses: {
                 [key: string]: components["schemas"]["LensCell"];
@@ -2740,6 +2967,176 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobRunOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_earnings_earnings__ticker__get: {
+        parameters: {
+            query?: {
+                as_of?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EarningsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_pre_earnings_backtest_pre_earnings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreEarningsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_sweep_backtest_pre_earnings_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SweepRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs_backtest_runs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_run_backtest_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

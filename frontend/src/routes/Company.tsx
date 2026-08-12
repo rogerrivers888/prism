@@ -4,6 +4,7 @@ import { useCompany, useMetricHistory, usePeers, type LensDetail } from "../api/
 import { LENSES, LENS_BAR_CLASS, LENS_TEXT_CLASS, type LensName } from "../api/universe";
 import { AskClaude } from "../components/AskClaude";
 import { Drawer, DrawerStack } from "../components/Drawer";
+import { EarningsPanel } from "../components/EarningsPanel";
 import { ExplainerDrawer } from "../components/ExplainerDrawer";
 import { MetricChart } from "../components/MetricChart";
 
@@ -245,6 +246,13 @@ export function Company() {
         </section>
 
         {/* Metric chart */}
+        <section className="mt-5">
+          <h2 className="font-display text-lg font-semibold">Earnings</h2>
+          <div className="mt-3">
+            <EarningsPanel ticker={ticker!} />
+          </div>
+        </section>
+
         <section className="mt-6">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="font-display text-lg font-semibold">History</h2>

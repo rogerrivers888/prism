@@ -356,6 +356,47 @@ class EODHDProvider:
             )
         return rows
 
+    def parse_earnings(
+        self, ticker: str, payload: object, observed_on: date
+    ) -> list[dict]:
+        """Report dates from Earnings::History — actual and still-forecast.
+
+        A period with no actual EPS has not reported yet, so its report_date is
+        a forecast: flagged, and re-observed every night so the movement of the
+        expectation is itself on the record.
+        """
+        if not isinstance(payload, dict):
+            return []
+        history = payload.get("Earnings", {}).get("History", {})
+        if not isinstance(history, dict):
+            return []
+
+        rows = []
+        for entry in history.values():
+            if not isinstance(entry, dict):
+                continue
+            period_end = _day(entry.get("date"))
+            if period_end is None:
+                continue
+            actual = _number(entry.get("epsActual"))
+            rows.append(
+                {
+                    "ticker": ticker,
+                    "period_end": period_end,
+                    "observed_on": observed_on,
+                    "report_date": _day(entry.get("reportDate")),
+                    "is_estimated": actual is None,
+                    "before_after_market": entry.get("beforeAfterMarket"),
+                    "eps_estimate": _number(entry.get("epsEstimate")),
+                    "eps_actual": actual,
+                    "revenue_estimate": None,
+                    "revenue_actual": None,
+                    "surprise_percent": _number(entry.get("surprisePercent")),
+                    "source": SOURCE,
+                }
+            )
+        return rows
+
     def parse_fundamentals(
         self, ticker: str, payload: object
     ) -> list[FundamentalRow]:

@@ -1,6 +1,6 @@
 import { LENSES, type LensName, type UniverseRow } from "../api/universe";
 
-export type SortKey = "dispersion" | "ticker" | LensName;
+export type SortKey = "dispersion" | "ticker" | "earnings" | LensName;
 export type GroupKey = "none" | "sector" | "size";
 
 /** Pull the value a sort or a bar should use, honouring the relative/absolute
@@ -26,6 +26,12 @@ export function sortRows(
   const valueOf = (row: UniverseRow): number | string | null => {
     if (key === "ticker") return row.ticker;
     if (key === "dispersion") return row.dispersion ?? null;
+    // Negated so "descending" means soonest first, matching every other
+    // column where descending puts the most interesting row on top.
+    if (key === "earnings")
+      return row.days_to_earnings === null || row.days_to_earnings === undefined
+        ? null
+        : -row.days_to_earnings;
     return scoreOf(row, key, absolute);
   };
 
