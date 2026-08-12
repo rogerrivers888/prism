@@ -31,12 +31,13 @@ from bisect import bisect_left
 import statistics
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.backtest import Costs, Trade, apply_costs, run_pre_earnings
+from app.earnings import EarningsDate
 from app.fundamentals import PriceDaily
 from app.lenses.base import SCORING_VERSION
 from app.lenses.engine import DispersionDaily, LensScoreDaily
@@ -525,3 +526,114 @@ async def run_segmented(
         "best_positive_segment": best,
         "underpowered_segments": [r["segment"] for r in rows if r["underpowered"]],
     }
+
+
+async def report_dates_by_ticker(
+    session: AsyncSession, tickers: list[str]
+) -> dict[str, list[date]]:
+    """Confirmed report dates, used to keep the control away from earnings."""
+    rows = (
+        await session.execute(
+            select(EarningsDate.ticker, EarningsDate.report_date)
+            .where(
+                EarningsDate.ticker.in_(tickers),
+                EarningsDate.is_estimated.is_(False),
+                EarningsDate.report_date.is_not(None),
+            )
+            .distinct()
+        )
+    ).all()
+    out: dict[str, list[date]] = defaultdict(list)
+    for ticker, report in rows:
+        out[ticker].append(report)
+    return {t: sorted(v) for t, v in out.items()}
+
+
+def rolling_vol(bars: list[tuple[date, float]], window: int = 60) -> list[float | None]:
+    """Annualised trailing volatility at every index, using only prior bars.
+
+    O(n) with running sums rather than O(n*window), because this is computed
+    for every bar of every ticker.
+    """
+    closes = [c for _, c in bars]
+    returns: list[float] = [0.0]
+    for i in range(1, len(closes)):
+        returns.append(closes[i] / closes[i - 1] - 1.0 if closes[i - 1] > 0 else 0.0)
+
+    out: list[float | None] = [None] * len(bars)
+    total = squared = 0.0
+    for i in range(1, len(returns)):
+        total += returns[i]
+        squared += returns[i] * returns[i]
+        if i > window:
+            total -= returns[i - window]
+            squared -= returns[i - window] * returns[i - window]
+        if i >= window and i + 1 < len(out):
+            mean = total / window
+            variance = max(squared / window - mean * mean, 0.0)
+            # Written to i+1, not i. The window ends at return i, so it is the
+            # volatility known to someone entering on bar i+1 — matching
+            # realised_vol, which excludes the entry day. Indexing it at i
+            # instead would let the control see the entry-day close and would
+            # filter the control on a different definition of "high volatility"
+            # than the one that selected the trades.
+            out[i + 1] = (variance ** 0.5) * (252 ** 0.5) * 100.0
+    return out
+
+
+def matched_pool(
+    series: dict[str, list[tuple[date, float]]],
+    holding_days: int,
+    costs: Costs,
+    vol_floor: float,
+    reports: dict[str, list[date]],
+    exclusion_before: int = 25,
+    exclusion_after: int = 5,
+) -> dict[str, list[float]]:
+    """A control conditioned on the same volatility state, away from earnings.
+
+    The unmatched control asks "what did these names return at a random time?"
+    For a segment selected *on* high volatility that is the wrong question,
+    because high trailing volatility usually follows a drawdown and the answer
+    is contaminated by mean reversion that has nothing to do with earnings.
+
+    This control asks the question that actually separates the hypotheses:
+    what did these names return over the same holding period, when they were
+    equally volatile, but *not* in the run-up to a report?
+    """
+    rng = random.Random(20260815)
+    pool: dict[str, list[float]] = {}
+
+    for ticker, bars in series.items():
+        if len(bars) < holding_days + 70:
+            continue
+        vols = rolling_vol(bars)
+        blocked = reports.get(ticker, [])
+
+        eligible = []
+        for i in range(len(bars) - holding_days - 1):
+            if vols[i] is None or vols[i] < vol_floor:
+                continue
+            entry_day, exit_day = bars[i][0], bars[i + holding_days][0]
+            near_earnings = any(
+                entry_day <= report + timedelta(days=exclusion_after)
+                and exit_day >= report - timedelta(days=exclusion_before)
+                for report in blocked
+            )
+            if not near_earnings:
+                eligible.append(i)
+
+        if len(eligible) < 5:
+            continue
+        draws = []
+        for _ in range(POOL_PER_TICKER):
+            i = eligible[rng.randrange(len(eligible))]
+            entry = bars[i][1]
+            if entry <= 0:
+                continue
+            gross = (bars[i + holding_days][1] / entry - 1.0) * 100.0
+            days = (bars[i + holding_days][0] - bars[i][0]).days
+            draws.append(apply_costs(gross, days, costs))
+        if draws:
+            pool[ticker] = draws
+    return pool
