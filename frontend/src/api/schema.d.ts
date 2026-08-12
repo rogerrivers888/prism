@@ -699,6 +699,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/backtest/pre-earnings/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Segments
+         * @description Sector, size and froth breakdowns, each against its own drift control.
+         *
+         *     Slow: one full backtest plus a bootstrap per segment. The multiple-
+         *     comparison correction is computed across every segment in the response,
+         *     so calling this and reading one row is not the same as testing one thing.
+         */
+        post: operations["post_segments_backtest_pre_earnings_segments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dev/events": {
         parameters: {
             query?: never;
@@ -1513,6 +1537,41 @@ export interface components {
             median_relative_premium: number | null;
             /** Member Count */
             member_count: number;
+        };
+        /** SegmentRequest */
+        SegmentRequest: {
+            /**
+             * Enter Days Before
+             * @default 10
+             */
+            enter_days_before: number;
+            /**
+             * Exit Days Before
+             * @default 2
+             */
+            exit_days_before: number;
+            /**
+             * Start
+             * Format: date
+             * @default 2010-01-01
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             * @default 2026-08-01
+             */
+            end: string;
+            /**
+             * Spread Bps
+             * @default 10
+             */
+            spread_bps: number;
+            /**
+             * Commission Bps
+             * @default 5
+             */
+            commission_bps: number;
         };
         /** SweepRequest */
         SweepRequest: {
@@ -3127,6 +3186,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_segments_backtest_pre_earnings_segments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SegmentRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
