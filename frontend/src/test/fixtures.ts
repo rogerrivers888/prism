@@ -8,7 +8,7 @@ export const ROWS: UniverseRow[] = [
   {
     ticker: "MU", name: "Micron Technology", sector: "semiconductors",
     subsector: "Semiconductors", size: "mega", currency: "USD",
-    quote_currency: "USD", market_cap: 9e11, dispersion: 28.9, usable_lenses: 6,
+    quote_currency: "USD", market_cap: 9e11, dispersion: 28.9, usable_lenses: 6, days_to_earnings: 12,
     lenses: {
       trend: cell(81.6, 78.9), growth: cell(93.7, 100), quality: cell(80.9, 92.4),
       // Relative and absolute differ sharply — this is the toggle's whole point.
@@ -18,7 +18,7 @@ export const ROWS: UniverseRow[] = [
   {
     ticker: "THIN", name: "Sparse Data Co", sector: "industrials",
     subsector: "Conglomerates", size: "mid", currency: "USD",
-    quote_currency: "USD", market_cap: 5e9, dispersion: null, usable_lenses: 2,
+    quote_currency: "USD", market_cap: 5e9, dispersion: null, usable_lenses: 2, days_to_earnings: null,
     lenses: {
       // Coverage below the minimum: a null score, NOT a zero.
       trend: cell(null, null, 0.4), growth: cell(null, null, 0.2),
@@ -31,7 +31,7 @@ export const ROWS: UniverseRow[] = [
   {
     ticker: "MID", name: "Middling Industries", sector: "industrials",
     subsector: "Railroads", size: "large", currency: "USD",
-    quote_currency: "USD", market_cap: 5e10, dispersion: 12.5, usable_lenses: 5,
+    quote_currency: "USD", market_cap: 5e10, dispersion: 12.5, usable_lenses: 5, days_to_earnings: 45,
     lenses: {
       trend: cell(50, 60), growth: cell(52, 62), quality: cell(48, 58),
       value: cell(55, 65), momentum: cell(51, 61), cycle: cell(null, null, 0, false),
