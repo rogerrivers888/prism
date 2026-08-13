@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 
 # EODHD Industry -> Prism sector.
 INDUSTRY_TO_SECTOR = {
+    # Departed constituents sometimes return with a different upstream
+    # taxonomy; these two appeared on recovered names.
+    "Investment Banking & Investment Services": "financials",
+    "Auto Components": "consumer_discretionary",
     # --- semiconductors: the cycle lens applies here ---
     "Semiconductors": "semiconductors",
     "Semiconductor Equipment & Materials": "semiconductors",
@@ -210,7 +214,9 @@ class UnmappedSector(Exception):
 
 def map_sector(provider_sector: str | None, provider_industry: str | None) -> str:
     """Resolve a Prism sector, preferring the finer Industry string."""
-    if provider_sector == "Other" and provider_industry == "Other":
+    if (provider_sector, provider_industry) == (None, None) or (
+        provider_sector == "Other" and provider_industry == "Other"
+    ):
         # Delisted companies frequently lose their classification upstream and
         # come back as Other/Other. "unclassified" is the honest answer: these
         # names never match a sector-restricted strategy and never join a peer
