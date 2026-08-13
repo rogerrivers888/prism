@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_session
 from app.fundamentals import PriceDaily, Security
 from app.strategies import registry
-from app.strategies.gate import track_record_verdict
+from app.strategies.gate import expected_max_under_null, track_record_verdict
 from app.strategies.paper import PaperEquityDaily, PaperPosition, PaperTrade
 from app.strategies.rules import describe, parse_rules
 from app.strategies.simulator import STARTING_CAPITAL, max_drawdown_pct
@@ -162,11 +162,46 @@ async def leaderboard(session: SessionDep) -> dict:
     for rows in boards.values():
         rows.sort(key=lambda r: (r.mean_trade_return_pct is None,
                                  -(r.mean_trade_return_pct or 0)))
+
+    # Cohort deflation, separate from the per-family kind. Lineage deflation
+    # asks "how many variants of THIS idea were tried"; every strategy here is
+    # its own root, so that number is one. But twelve strategies were run
+    # against the same fifteen years at the same time, and the best of twelve
+    # is a different question from the best of one. Showing only the lineage
+    # bar would understate how much searching actually happened.
+    tested = [r for rows in boards.values() for r in rows
+              if r.mean_trade_return_pct is not None]
+    cohort = None
+    if len(tested) > 1:
+        best = max(tested, key=lambda r: r.mean_trade_return_pct)
+        z = expected_max_under_null(len(tested))
+        cohort = {
+            "strategies_tested": len(tested),
+            "expected_max_z": round(z, 3),
+            "best": best.name,
+            "note": (
+                f"{len(tested)} strategies were tested against the same history. "
+                f"Even if all {len(tested)} were worthless, the best would be "
+                f"expected to clear roughly {z:.1f} standard errors on luck alone. "
+                "Read the top row as the winner of a competition, not as a discovery."
+            ),
+        }
+
     return {
         "boards": boards,
         "ranked_on": (
             "Full-history expectancy after costs. Never on recent performance — "
             "ranking by the last thirty days promotes whatever just got lucky."
+        ),
+        "cohort_deflation": cohort,
+        # Survivorship applies to every row, so it is stated once and
+        # prominently rather than twelve times in small print.
+        "universe_warning": (
+            "Every backtest here runs on today's index membership. Companies that "
+            "went bankrupt or were taken over are absent, so the absolute returns "
+            "are far better than reality — most extremely for the momentum "
+            "strategies, which buy whatever rose furthest. Compare each strategy "
+            "against its own control, never against another's headline return."
         ),
     }
 

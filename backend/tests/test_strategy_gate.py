@@ -106,10 +106,18 @@ RULES = {
 }
 
 
-def variant(threshold):
+def variant(_seed=None):
+    """A uniquely-signed rule-set.
+
+    The test database persists between runs by design and the registry
+    correctly rejects identical rules as duplicates, so each registration
+    needs a signature nothing else will collide with.
+    """
     import copy
+    import random
+
     out = copy.deepcopy(RULES)
-    out["entry"]["value"] = threshold
+    out["entry"]["value"] = round(random.uniform(1, 99), 6)
     return out
 
 
@@ -124,10 +132,10 @@ async def _register(session, name, rules, parent=None):
 @pytest.mark.asyncio
 async def test_family_counts_every_descendant_as_a_trial(session):
     """Three tweaks of one idea are four attempts, not one."""
-    root = await _register(session, "Root", RULES)
-    child = await _register(session, "Child", variant(71), parent=root)
-    grandchild = await _register(session, "Grandchild", variant(72), parent=child)
-    unrelated = await _register(session, "Unrelated", variant(90))
+    root = await _register(session, "Root", variant())
+    child = await _register(session, "Child", variant(), parent=root)
+    grandchild = await _register(session, "Grandchild", variant(), parent=child)
+    unrelated = await _register(session, "Unrelated", variant())
 
     family = await family_of(session, grandchild)
     ids = {f.strategy_id for f in family}

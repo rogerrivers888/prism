@@ -29,6 +29,13 @@ export type LeaderboardRow = {
 export type Leaderboard = {
   boards: Record<string, LeaderboardRow[]>;
   ranked_on: string;
+  universe_warning: string;
+  cohort_deflation: {
+    strategies_tested: number;
+    expected_max_z: number;
+    note: string;
+    best: string;
+  } | null;
 };
 
 export type StrategyHolding = {

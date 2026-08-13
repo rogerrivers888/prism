@@ -140,6 +140,7 @@ function TradesToday() {
 
 export default function Strategies() {
   const { data, isLoading, error } = useLeaderboard();
+  const { prose } = useGlossary();
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-6">
@@ -151,9 +152,21 @@ export default function Strategies() {
           recommendation, and nothing is promoted automatically.
         </p>
         {data && (
-          <p className="mt-2 max-w-2xl border-l-2 border-border pl-3 text-xs text-text-muted">
-            {data.ranked_on}
-          </p>
+          <div className="mt-3 space-y-2">
+            {/* Survivorship first: it applies to every row and it is the
+                largest single reason these numbers overstate reality. */}
+            <p className="max-w-2xl border-l-2 border-warning bg-warning/10 px-3 py-2 text-xs leading-relaxed">
+              {prose(data.universe_warning)}
+            </p>
+            {data.cohort_deflation && (
+              <p className="max-w-2xl border-l-2 border-warning bg-warning/10 px-3 py-2 text-xs leading-relaxed">
+                {prose(data.cohort_deflation.note)}
+              </p>
+            )}
+            <p className="max-w-2xl border-l-2 border-border pl-3 text-xs text-text-muted">
+              {data.ranked_on}
+            </p>
+          </div>
         )}
       </header>
 
