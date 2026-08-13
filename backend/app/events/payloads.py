@@ -104,6 +104,81 @@ class DecisionClosed(_Payload):
     note: str | None = None
 
 
+class StrategyRegistered(_Payload):
+    """A strategy exists from the moment it is written down — before any
+    backtest runs. Prediction first, evidence second, so the evidence can
+    never quietly rewrite the prediction."""
+
+    event_type: Literal["StrategyRegistered"] = "StrategyRegistered"
+    name: str
+    # What it believes and WHY it should work, in plain English.
+    hypothesis: str
+    # Who this derives from: "Piotroski 2000", "Roger's idea, 2026-08-12".
+    authority: str
+    citation: str | None = None
+    # The executable rule-set, validated against the rule vocabulary at
+    # registration. JSON the engine runs, not prose.
+    rules: dict
+    horizon: Literal["short", "medium", "long"]
+    expected_trade_frequency: str
+    expected_holding_period: str
+    # Written down before testing. The backtest then confirms or embarrasses.
+    predicted_performance: str
+    # Tweaks are new strategies with lineage; the family counts as multiple
+    # trials in any deflation maths.
+    parent_strategy_id: str | None = None
+    decay_note: str
+    # Where the encoding had to deviate from the source (missing data, proxy
+    # metrics), stated at registration rather than discovered later.
+    encoding_deviations: str | None = None
+
+
+class StrategyActivated(_Payload):
+    event_type: Literal["StrategyActivated"] = "StrategyActivated"
+    # Set when activation went ahead despite a duplicate flag; the override
+    # is recorded, not silent.
+    duplicate_override_note: str | None = None
+
+
+class StrategyPaused(_Payload):
+    event_type: Literal["StrategyPaused"] = "StrategyPaused"
+    reason: str
+
+
+class StrategyRetired(_Payload):
+    event_type: Literal["StrategyRetired"] = "StrategyRetired"
+    reason: str
+
+
+class StrategyPromoted(_Payload):
+    """backtest -> paper -> proven. Promotion is a human act: the engine can
+    recommend it, only Roger can do it."""
+
+    event_type: Literal["StrategyPromoted"] = "StrategyPromoted"
+    stage: Literal["paper", "proven"]
+    note: str | None = None
+
+
+class PaperTradeExecuted(_Payload):
+    """A fill in the paper book. Signal one day, fill at the NEXT day's open —
+    a same-day-close fill would be trading on a price that had already gone."""
+
+    event_type: Literal["PaperTradeExecuted"] = "PaperTradeExecuted"
+    ticker: str
+    side: Literal["buy", "sell"]
+    quantity: Decimal
+    price: Decimal
+    currency: str = "GBP"
+    spread_cost: Decimal
+    commission: Decimal
+    signal_date: str
+    fill_date: str
+    # Full traceability: the rule that fired and the metric values that
+    # triggered it travel with the trade forever.
+    rule_fired: str
+    metric_values: dict
+
+
 EventPayload = Annotated[
     Union[
         TradeExecuted,
@@ -115,6 +190,12 @@ EventPayload = Annotated[
         DecisionTaken,
         DecisionDeclined,
         DecisionClosed,
+        StrategyRegistered,
+        StrategyActivated,
+        StrategyPaused,
+        StrategyRetired,
+        StrategyPromoted,
+        PaperTradeExecuted,
     ],
     Field(discriminator="event_type"),
 ]
