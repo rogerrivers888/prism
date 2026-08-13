@@ -26,7 +26,14 @@ export type Significance = {
   inside_noise: boolean;
 };
 
+export type PlainVerdict = {
+  headline: string;
+  body: string;
+  worth_acting_on: boolean;
+};
+
 export type BacktestResult = {
+  plain_verdict: PlainVerdict | null;
   strategy: string;
   params: Record<string, unknown>;
   overall: Overall;
@@ -151,6 +158,7 @@ export type Segment = {
 };
 
 export type SegmentsResult = {
+  plain_verdict: PlainVerdict | null;
   pooled: { trades: number; mean_return_pct: number; excess_over_drift_pct: number | null };
   holding_days: number;
   control_pool: { tickers: number; draws_each: number };

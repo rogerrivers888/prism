@@ -4,8 +4,8 @@ import { useCompany, useMetricHistory, usePeers, type LensDetail } from "../api/
 import { LENSES, LENS_BAR_CLASS, LENS_TEXT_CLASS, type LensName } from "../api/universe";
 import { AskClaude } from "../components/AskClaude";
 import { Drawer, DrawerStack } from "../components/Drawer";
+import { useGlossary } from "../components/GlossaryProvider";
 import { EarningsPanel } from "../components/EarningsPanel";
-import { ExplainerDrawer } from "../components/ExplainerDrawer";
 import { MetricChart } from "../components/MetricChart";
 
 /** What a disagreement between two named lenses usually means.
@@ -41,9 +41,9 @@ function shapeOf(high: string, low: string): string {
 export function Company() {
   const { ticker = "" } = useParams();
   const { data, isLoading, error } = useCompany(ticker);
+  const { open: openTerm } = useGlossary();
   const [absolute, setAbsolute] = useState(false);
   const [openLens, setOpenLens] = useState<LensName | null>(null);
-  const [openMetric, setOpenMetric] = useState<{ metric: string; value?: number | null } | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [chartMetrics, setChartMetrics] = useState<string[]>(["roic", "pe_ratio"]);
   const [range, setRange] = useState<"12M" | "5Y" | "MAX">("5Y");
@@ -318,18 +318,20 @@ export function Company() {
             <LensBreakdown
               detail={detail}
               absolute={absolute}
-              onMetric={(metric, value) => setOpenMetric({ metric, value })}
+              onMetric={(metric, value) =>
+                openTerm(metric, {
+                  from: `the ${data.name} company page`,
+                  valueLabel:
+                    value === null || value === undefined
+                      ? "no value for this company"
+                      : `this company: ${value.toLocaleString(undefined, { maximumFractionDigits: 4 })}`,
+                  detail: { ticker: data.ticker, metric, value },
+                })
+              }
               peers={peers.data ?? []}
               self={data.ticker}
             />
           </Drawer>
-        )}
-        {openMetric && (
-          <ExplainerDrawer
-            metric={openMetric.metric}
-            value={openMetric.value}
-            onClose={() => setOpenMetric(null)}
-          />
         )}
         {askOpen && (
           <AskClaude

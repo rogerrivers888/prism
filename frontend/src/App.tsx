@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Backtest from "./routes/Backtest";
+import Glossary from "./routes/Glossary";
+import { GlossaryProvider } from "./components/GlossaryProvider";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Shell } from "./components/Shell";
 import { Universe } from "./routes/Universe";
@@ -18,19 +20,22 @@ export default function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
-            <Route element={<Shell />}>
-              <Route index element={<Universe />} />
-              <Route path="/company/:ticker" element={<Company />} />
-              <Route path="/screener" element={<Screener />} />
-              <Route path="/research" element={<Research />} />
-              <Route path="/book" element={<Book />} />
-              <Route path="/decisions" element={<Decisions />} />
-              <Route path="/backtest" element={<Backtest />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+        <GlossaryProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route element={<Shell />}>
+                <Route index element={<Universe />} />
+                <Route path="/company/:ticker" element={<Company />} />
+                <Route path="/screener" element={<Screener />} />
+                <Route path="/research" element={<Research />} />
+                <Route path="/book" element={<Book />} />
+                <Route path="/decisions" element={<Decisions />} />
+                <Route path="/backtest" element={<Backtest />} />
+                <Route path="/glossary" element={<Glossary />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </GlossaryProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

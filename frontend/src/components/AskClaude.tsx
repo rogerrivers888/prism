@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { API_BASE_URL } from "../api/config";
 import { Drawer } from "./Drawer";
+import { useGlossary } from "./GlossaryProvider";
 
 type Turn = { role: "user" | "assistant"; content: string; refused?: boolean };
 
@@ -16,6 +17,10 @@ export function AskClaude({
   context: unknown;
   onClose: () => void;
 }) {
+  const { prose } = useGlossary();
+  // One set for the whole conversation, so a term links on its first mention
+  // and is left alone in every later reply rather than lighting up repeatedly.
+  const linkedSoFar = useMemo(() => new Set<string>(), []);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -91,7 +96,9 @@ export function AskClaude({
                   declined
                 </p>
               )}
-              <p className="whitespace-pre-wrap leading-relaxed">{turn.content}</p>
+              <p className="whitespace-pre-wrap leading-relaxed">
+                {turn.role === "assistant" ? prose(turn.content, linkedSoFar) : turn.content}
+              </p>
             </div>
           ))}
           {busy && <p className="text-sm text-text-muted">thinking…</p>}

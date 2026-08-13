@@ -6,17 +6,45 @@ import {
   type BacktestResult,
   type Caveat,
   type Params,
+  type PlainVerdict,
   type Segment,
   type SegmentsResult,
   type SweepResult,
 } from "../api/backtest";
+import { useGlossary } from "../components/GlossaryProvider";
 
 /** Caveats render above the numbers, not below them.
  *
  *  The brief was explicit that results must carry their caveats rather than
  *  footnote them, and placement is the whole of that instruction: a warning
  *  under a table is read after the reader has already believed the table. */
+/** The plain-English answer, above the tables rather than under them.
+ *
+ *  Roger is an intermediate investor, and the previous version of this screen
+ *  was written for someone who already understood it. Anyone reading only this
+ *  block should come away with the correct conclusion; the tables below are for
+ *  checking the reasoning, not for reaching it.
+ *
+ *  The text is computed from the numbers server-side, not written by a model,
+ *  so it cannot say something the tables contradict. */
+function Verdict({ verdict }: { verdict: PlainVerdict }) {
+  const { prose } = useGlossary();
+  return (
+    <section
+      className={`border-l-4 px-4 py-4 ${
+        verdict.worth_acting_on ? "border-l-accent bg-surface-2" : "border-l-warn bg-warn/10"
+      }`}
+    >
+      <p className="text-base leading-relaxed text-fg">{prose(verdict.headline)}</p>
+      {verdict.body && (
+        <p className="mt-2 text-sm leading-relaxed text-muted">{prose(verdict.body)}</p>
+      )}
+    </section>
+  );
+}
+
 function Caveats({ items }: { items: Caveat[] }) {
+  const { prose } = useGlossary();
   if (!items.length) return null;
   const tone: Record<string, string> = {
     high: "border-l-warn bg-warn/10",
@@ -36,7 +64,7 @@ function Caveats({ items }: { items: Caveat[] }) {
             </span>
             <span className="font-medium text-fg">{caveat.title}</span>
           </div>
-          <p className="mt-1 text-muted">{caveat.body}</p>
+          <p className="mt-1 text-muted">{prose(caveat.body)}</p>
         </div>
       ))}
     </div>
@@ -145,6 +173,7 @@ function Results({ result }: { result: BacktestResult }) {
 
   return (
     <div className="space-y-6">
+      {result.plain_verdict && <Verdict verdict={result.plain_verdict} />}
       <Caveats items={result.caveats} />
 
       {/* The headline is the excess, not the return. A long-only hold in a
@@ -349,6 +378,7 @@ function Segments({ result }: { result: SegmentsResult }) {
 
   return (
     <div className="space-y-5">
+      {result.plain_verdict && <Verdict verdict={result.plain_verdict} />}
       {/* The count of tests leads. Reading one row out of thirty as if it were
           one test is the failure mode this whole screen exists to prevent. */}
       <div className="border-l-4 border-l-warn bg-warn/10 px-4 py-3 text-sm">

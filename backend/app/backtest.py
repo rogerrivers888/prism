@@ -463,10 +463,19 @@ async def run_pre_earnings(
         # Attached to the result, not to a footnote. A caller that renders the
         # numbers without these is misrepresenting them.
         "caveats": caveats(overall, boot, variants_tested, control),
+        # Filled in below, once the rest of the payload exists to summarise.
+        "plain_verdict": None,
         # Private: the trade objects themselves, so segmentation can reuse a
         # run rather than repeat it. Stripped by public() before serialisation.
         "_trades": trades,
     }
+
+
+def with_verdict(result: dict) -> dict:
+    """Attach the plain-English summary. Separate from run_pre_earnings only
+    because the verdict reads the finished payload."""
+    result["plain_verdict"] = plain_verdict(result)
+    return result
 
 
 def public(result: dict) -> dict:
@@ -667,3 +676,98 @@ def caveats(
         })
 
     return notes
+
+
+# What a realistic position looks like, used to turn percentages into money.
+# A per-trade percentage is meaningless to most people until it is a number of
+# pounds on an amount they might actually commit.
+ILLUSTRATIVE_POSITION = 10_000
+
+
+def plain_verdict(result: dict) -> dict:
+    """A plain-English summary of a backtest, written before the tables.
+
+    Generated from the numbers rather than by asking a model, for two reasons:
+    it is always available even with no API key, and it cannot say something
+    the tables contradict.
+
+    The rules it follows are the same ones imposed on the assistant: no
+    notation, no undefined jargon, money not just percentages, and the
+    not-worth-it verdict stated first rather than buried.
+    """
+    overall = result.get("overall") or {}
+    trades = overall.get("trades", 0)
+    if not trades:
+        return {
+            "headline": "No trades matched these settings.",
+            "body": "Try a longer date range or a wider gap between the buy and sell days.",
+            "worth_acting_on": False,
+        }
+
+    net = overall["mean_return_pct"]
+    excess = result.get("excess_over_drift_pct")
+    significance = result.get("excess_significance") or {}
+    noisy = significance.get("inside_noise")
+    variants = result.get("variants_tested", 1)
+    costs = overall.get("cost_drag_pct", 0.0)
+
+    pounds = lambda pct: f"£{pct / 100 * ILLUSTRATIVE_POSITION:,.0f}"
+
+    # The headline is the excess, never the raw return. The raw return mostly
+    # measures the market having gone up.
+    if excess is None:
+        headline = (
+            f"Each trade made {net:+.2f}% on average, which is about "
+            f"{pounds(net)} on a {pounds(100)} position."
+        )
+        worth = net > 0
+    elif excess <= 0:
+        headline = (
+            "This is not worth acting on. Buying before earnings did no better than "
+            "buying the same shares on random days for the same length of time — so "
+            "the timing added nothing, and you would be paying to trade for no reason."
+        )
+        worth = False
+    elif noisy:
+        headline = (
+            f"This could easily be a coincidence. The earnings timing looks like it "
+            f"added {excess:+.2f}% per trade — around {pounds(excess)} on a "
+            f"{pounds(100)} position — but the results vary enough that the real "
+            f"figure could just as well be zero."
+        )
+        worth = False
+    else:
+        headline = (
+            f"The earnings timing added about {excess:+.2f}% per trade beyond simply "
+            f"owning the same shares for the same number of days. On a {pounds(100)} "
+            f"position that is roughly {pounds(excess)} a trade."
+        )
+        worth = True
+
+    parts = [
+        f"Across {trades:,} simulated trades, the average was {net:+.2f}% after "
+        f"buying and selling costs, which took {costs:.2f}% off every trade."
+    ]
+
+    control = result.get("control_unconditional_drift") or {}
+    if control.get("samples"):
+        parts.append(
+            f"Buying the same shares on random days for the same length of time returned "
+            f"{control['mean_return_pct']:+.2f}%, so most of that average is the market "
+            f"drifting upwards rather than anything to do with earnings."
+        )
+
+    if variants > 1:
+        parts.append(
+            f"{variants} different combinations of buy and sell timing were tried. When you "
+            f"try that many, the best one usually looks better than it really is, so treat "
+            f"a single good result as something to check rather than something to trust."
+        )
+
+    parts.append(
+        "Everything here is measured on the companies that are in the index today. "
+        "Firms that went bust or were bought are missing, so every figure is more "
+        "flattering than reality by an amount nobody can measure."
+    )
+
+    return {"headline": headline, "body": " ".join(parts), "worth_acting_on": worth}

@@ -1,0 +1,1796 @@
+[
+ {
+  "slug": "pe_ratio",
+  "term": "P/E ratio",
+  "aliases": [
+   "P/E",
+   "P/E ratio",
+   "PE ratio",
+   "price to earnings",
+   "price-to-earnings",
+   "price/earnings"
+  ],
+  "short_definition": "How many pounds you pay for each pound of yearly profit.",
+  "full_explanation": "How many pounds you pay for each pound of yearly profit. A P/E of 15 means you're paying £15 for £1 of annual earnings.\n\nThe company's total market value divided by its profit over the last twelve months.",
+  "worked_example": "A company worth £3bn that made £200m last year has a P/E of 15 (3,000 ÷ 200).",
+  "how_to_read_it": "Lower is cheaper. Roughly: under 10 is cheap, 10–20 is ordinary, over 30 means the market expects a lot of growth. But the 'right' P/E differs hugely by industry.\n\nRead it alongside: Growth rate — a high P/E is only expensive if the growth doesn't arrive. And free cash flow, since profit can be an accounting figure while cash is not.",
+  "common_mistakes": "It's meaningless when profits are negative (we show no score rather than a negative P/E), and unreliable when profits are unusually high or low for one year — a cyclical peak makes a company look cheapest exactly when it's most dangerous.",
+  "related_slugs": [
+   "ev_ebitda",
+   "fcf_yield",
+   "eps_growth_yoy",
+   "value"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: P/E ratio",
+    "url": "https://www.investopedia.com/search?q=P%2FE+ratio",
+    "source_type": "reference"
+   },
+   {
+    "label": "Corporate Finance Institute: Price Earnings Ratio",
+    "url": "https://corporatefinanceinstitute.com/resources/valuation/price-earnings-ratio/",
+    "source_type": "reference"
+   }
+  ],
+  "category": "value"
+ },
+ {
+  "slug": "ev_ebitda",
+  "term": "EV/EBITDA",
+  "aliases": [
+   "EV/EBITDA",
+   "EV to EBITDA",
+   "enterprise value to EBITDA"
+  ],
+  "short_definition": "Like P/E, but it counts the company's debt too, and measures profit before interest, tax and the accounting charge for wearing-out assets.",
+  "full_explanation": "Like P/E, but it counts the company's debt too, and measures profit before interest, tax and the accounting charge for wearing-out assets. It asks what you'd pay to buy the whole business outright.\n\nEnterprise value (market value plus debt, minus cash) divided by EBITDA over the last twelve months.",
+  "worked_example": "A company worth £3bn with £1bn of debt and £200m of cash has an enterprise value of £3.8bn. If EBITDA was £400m, EV/EBITDA is 9.5.",
+  "how_to_read_it": "Lower is cheaper. Under 8 is generally cheap, 8–14 ordinary, above 18 demanding.\n\nRead it alongside: Net debt to EBITDA, since a low multiple on a heavily indebted business is not the bargain it appears.",
+  "common_mistakes": "Undefined when EBITDA is zero or negative — we exclude it rather than print a meaningless number. Also undefined for banks and insurers, where debt is raw material rather than borrowing.",
+  "related_slugs": [
+   "pe_ratio",
+   "net_debt_to_ebitda",
+   "ebitda",
+   "value"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: EV/EBITDA",
+    "url": "https://www.investopedia.com/search?q=EV%2FEBITDA",
+    "source_type": "reference"
+   },
+   {
+    "label": "Corporate Finance Institute: EV/EBITDA",
+    "url": "https://corporatefinanceinstitute.com/resources/valuation/ev-ebitda/",
+    "source_type": "reference"
+   }
+  ],
+  "category": "value"
+ },
+ {
+  "slug": "fcf_yield",
+  "term": "Free cash flow yield",
+  "aliases": [
+   "free cash flow yield",
+   "FCF yield"
+  ],
+  "short_definition": "The actual spare cash the business generated last year, as a percentage of what the whole company costs.",
+  "full_explanation": "The actual spare cash the business generated last year, as a percentage of what the whole company costs. It's the closest thing to 'what would this pay me if I owned all of it'.\n\nCash from operations minus what was spent on equipment and property, divided by market value.",
+  "worked_example": "A £3bn company that generated £150m of spare cash has a 5% FCF yield.",
+  "how_to_read_it": "Higher is better. Above 6% is generous, 3–6% ordinary, below 2% means you're paying for future growth rather than present cash.\n\nRead it alongside: FCF conversion, which tells you whether the cash is a fluke or a habit.",
+  "common_mistakes": "Negative free cash flow can mean a company is dying, or that it's investing heavily in something that will pay off. We can't tell which from the number, so we exclude it and flag it for you to judge.",
+  "related_slugs": [
+   "fcf",
+   "fcf_conversion",
+   "pe_ratio",
+   "value"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Free cash flow yield",
+    "url": "https://www.investopedia.com/search?q=Free+cash+flow+yield",
+    "source_type": "reference"
+   }
+  ],
+  "category": "value"
+ },
+ {
+  "slug": "price_to_book",
+  "term": "Price to book",
+  "aliases": [
+   "price to book",
+   "price-to-book",
+   "P/B",
+   "P/B ratio",
+   "book value multiple"
+  ],
+  "short_definition": "What you pay compared to the accounting value of everything the company owns minus everything it owes.",
+  "full_explanation": "What you pay compared to the accounting value of everything the company owns minus everything it owes.\n\nMarket value divided by shareholders' equity from the balance sheet.",
+  "worked_example": "A £3bn company whose books say its net assets are worth £1bn has a P/B of 3.",
+  "how_to_read_it": "Lower is cheaper. Below 1 means you're paying less than the stated value of the assets. Above 5 means the value is mostly in things the accounts don't capture.\n\nRead it alongside: Return on capital — a high P/B is justified if the assets earn well.",
+  "common_mistakes": "Nearly useless for software and media companies, whose real assets are code and brands that never appear on a balance sheet. We exclude it for those. For banks and insurers it's the opposite — one of the more meaningful measures, so we keep it.",
+  "related_slugs": [
+   "roic",
+   "value"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Price-to-book ratio",
+    "url": "https://www.investopedia.com/search?q=Price-to-book+ratio",
+    "source_type": "reference"
+   }
+  ],
+  "category": "value"
+ },
+ {
+  "slug": "dividend_yield",
+  "term": "Dividend yield",
+  "aliases": [
+   "dividend yield"
+  ],
+  "short_definition": "The cash paid out to shareholders over the last year, as a percentage of the share price.",
+  "full_explanation": "The cash paid out to shareholders over the last year, as a percentage of the share price.\n\nTotal dividends per share over twelve months divided by the current price.",
+  "worked_example": "A £10 share that paid 30p in dividends has a 3% yield.",
+  "how_to_read_it": "Higher pays you more now. Above 4% is generous, 2–4% ordinary, zero is common for growth companies that reinvest instead.\n\nRead it alongside: FCF conversion and payout sustainability — a very high yield is often the market predicting a cut.",
+  "common_mistakes": "A yield can rise purely because the price fell. Zero yield says nothing bad; plenty of excellent companies pay nothing.",
+  "related_slugs": [
+   "fcf_yield",
+   "value"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Dividend yield",
+    "url": "https://www.investopedia.com/search?q=Dividend+yield",
+    "source_type": "reference"
+   }
+  ],
+  "category": "value"
+ },
+ {
+  "slug": "roic",
+  "term": "Return on invested capital",
+  "aliases": [
+   "ROIC",
+   "return on invested capital",
+   "return on capital"
+  ],
+  "short_definition": "How much profit the business squeezes out of the money tied up in it.",
+  "full_explanation": "How much profit the business squeezes out of the money tied up in it. The single best measure of whether a company is actually good at what it does.\n\nOperating profit after tax, divided by the capital invested in the business.",
+  "worked_example": "A business using £1bn of capital that earns £150m after tax has a ROIC of 15%.",
+  "how_to_read_it": "Higher is better. Above 20% is excellent, 10–20% solid, below the company's cost of borrowing means it destroys value by growing.\n\nRead it alongside: Growth. High ROIC plus growth compounds; high ROIC without growth is a cash cow; low ROIC with growth burns money.",
+  "common_mistakes": "Distorted by acquisitions (goodwill inflates capital) and by asset-light businesses that can show enormous ROIC on a tiny capital base.",
+  "related_slugs": [
+   "gross_profitability",
+   "quality",
+   "price_to_book"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Return on invested capital",
+    "url": "https://www.investopedia.com/search?q=Return+on+invested+capital",
+    "source_type": "reference"
+   },
+   {
+    "label": "Corporate Finance Institute: ROIC",
+    "url": "https://corporatefinanceinstitute.com/resources/accounting/return-on-invested-capital/",
+    "source_type": "reference"
+   }
+  ],
+  "category": "quality"
+ },
+ {
+  "slug": "gross_profitability",
+  "term": "Gross profitability",
+  "aliases": [
+   "gross profitability",
+   "Novy-Marx profitability"
+  ],
+  "short_definition": "How much gross profit the company earns per pound of assets it owns.",
+  "full_explanation": "How much gross profit the company earns per pound of assets it owns. A measure of how productively the asset base is used.\n\nGross profit divided by total assets. Devised by Robert Novy-Marx, who found it predicted returns better than most quality measures.",
+  "worked_example": "A company with £5bn of assets earning £1.5bn of gross profit scores 0.30.",
+  "how_to_read_it": "Higher is better. Above 0.33 is strong, 0.20–0.33 average, below 0.15 weak.\n\nRead it alongside: ROIC. They measure similar things differently; agreement between them is reassuring.",
+  "common_mistakes": "Less meaningful for financials, where 'assets' means something different, and for companies that lease rather than own.",
+  "related_slugs": [
+   "roic",
+   "gross_margin",
+   "quality"
+  ],
+  "external_links": [
+   {
+    "label": "Novy-Marx, The Other Side of Value (PDF)",
+    "url": "https://rnm.simon.rochester.edu/research/OSoV.pdf",
+    "source_type": "paper"
+   }
+  ],
+  "category": "quality"
+ },
+ {
+  "slug": "gross_margin",
+  "term": "Gross margin",
+  "aliases": [
+   "gross margin"
+  ],
+  "short_definition": "Of every pound of sales, how much is left after paying for the direct cost of making the thing.",
+  "full_explanation": "Of every pound of sales, how much is left after paying for the direct cost of making the thing. A rough measure of pricing power.\n\nGross profit divided by revenue.",
+  "worked_example": "£100m of sales costing £40m to produce gives a 60% gross margin.",
+  "how_to_read_it": "Shown for information, not scored. Software runs at 80%, supermarkets at 25% — the difference is the industry, not the quality of the business.\n\nRead it alongside: Gross profitability, which is the scored version and comparable across industries.",
+  "common_mistakes": "Comparing it across different industries is meaningless, which is exactly why we display it but don't rank on it.",
+  "related_slugs": [
+   "gross_profitability",
+   "quality"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Gross margin",
+    "url": "https://www.investopedia.com/search?q=Gross+margin",
+    "source_type": "reference"
+   }
+  ],
+  "category": "quality"
+ },
+ {
+  "slug": "net_debt_to_ebitda",
+  "term": "Net debt to EBITDA",
+  "aliases": [
+   "net debt to EBITDA",
+   "net debt/EBITDA",
+   "leverage ratio"
+  ],
+  "short_definition": "How many years of profit it would take to pay off the debt.",
+  "full_explanation": "How many years of profit it would take to pay off the debt. The standard measure of whether borrowing is dangerous.\n\nDebt minus cash, divided by EBITDA.",
+  "worked_example": "£800m of net debt against £400m of EBITDA is 2.0 — two years of profit to clear it.",
+  "how_to_read_it": "Lower is safer. Below 1 is conservative, 1–3 normal, above 4 is fragile in a downturn. Negative means more cash than debt.\n\nRead it alongside: Interest cover, which measures whether the debt is affordable now rather than in aggregate.",
+  "common_mistakes": "Undefined for banks and insurers, where deposits are funding rather than borrowing. Also flattering for cyclical companies measured at a profit peak.",
+  "related_slugs": [
+   "interest_cover",
+   "ebitda",
+   "quality"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Net debt-to-EBITDA",
+    "url": "https://www.investopedia.com/search?q=Net+debt-to-EBITDA",
+    "source_type": "reference"
+   }
+  ],
+  "category": "quality"
+ },
+ {
+  "slug": "interest_cover",
+  "term": "Interest cover",
+  "aliases": [
+   "interest cover",
+   "interest coverage",
+   "interest coverage ratio"
+  ],
+  "short_definition": "How many times over the company's profit could pay its interest bill.",
+  "full_explanation": "How many times over the company's profit could pay its interest bill. A direct measure of how close it is to trouble.\n\nOperating profit divided by interest expense.",
+  "worked_example": "£300m of operating profit against £30m of interest is 10× cover.",
+  "how_to_read_it": "Higher is safer. Above 10 is comfortable, 3–10 adequate, below 2 means a bad year could threaten solvency.\n\nRead it alongside: Net debt to EBITDA. Cover can look fine at low rates and collapse when debt is refinanced.",
+  "common_mistakes": "We skip it when reported interest is zero — that usually means the expense was capitalised or netted off rather than that the company has infinite cover.",
+  "related_slugs": [
+   "net_debt_to_ebitda",
+   "quality"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Interest coverage ratio",
+    "url": "https://www.investopedia.com/search?q=Interest+coverage+ratio",
+    "source_type": "reference"
+   }
+  ],
+  "category": "quality"
+ },
+ {
+  "slug": "fcf_conversion",
+  "term": "Free cash flow conversion",
+  "aliases": [
+   "free cash flow conversion",
+   "FCF conversion",
+   "cash conversion"
+  ],
+  "short_definition": "How much of the reported profit actually turned into cash.",
+  "full_explanation": "How much of the reported profit actually turned into cash. The main defence against accounting that flatters.\n\nFree cash flow divided by net income.",
+  "worked_example": "£120m of cash from £100m of reported profit is 120% conversion.",
+  "how_to_read_it": "Higher is better. Above 100% is excellent, 75–100% healthy, persistently below 50% is a warning that profits are an accounting artefact.\n\nRead it alongside: Growth in receivables and inventory, which is usually where the missing cash went.",
+  "common_mistakes": "Lumpy for companies with big investment cycles, and meaningless in a year when profit is near zero.",
+  "related_slugs": [
+   "fcf",
+   "fcf_yield",
+   "quality"
+  ],
+  "external_links": [
+   {
+    "label": "Corporate Finance Institute: Cash conversion ratio",
+    "url": "https://corporatefinanceinstitute.com/resources/accounting/cash-conversion-ratio/",
+    "source_type": "reference"
+   }
+  ],
+  "category": "quality"
+ },
+ {
+  "slug": "revenue_growth_yoy",
+  "term": "Revenue growth (year on year)",
+  "aliases": [
+   "revenue growth",
+   "sales growth",
+   "revenue growth year on year"
+  ],
+  "short_definition": "How much bigger sales are than a year ago.",
+  "full_explanation": "How much bigger sales are than a year ago.\n\nSales over the last twelve months compared with the twelve months before.",
+  "worked_example": "£110m this year against £100m last year is 10% growth.",
+  "how_to_read_it": "Higher is better. Above 20% is fast, 5–15% steady, negative means the business is shrinking.\n\nRead it alongside: Whether profit grew too — growth bought by cutting prices isn't worth much.",
+  "common_mistakes": "Flattered by acquisitions, which buy revenue rather than earn it. A single strong or weak comparison quarter distorts it.",
+  "related_slugs": [
+   "revenue_cagr_3y",
+   "eps_growth_yoy",
+   "growth"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Year over year (YOY)",
+    "url": "https://www.investopedia.com/search?q=Year+over+year+%28YOY%29",
+    "source_type": "reference"
+   }
+  ],
+  "category": "growth"
+ },
+ {
+  "slug": "eps_growth_yoy",
+  "term": "Earnings per share growth",
+  "aliases": [
+   "EPS growth",
+   "earnings per share growth"
+  ],
+  "short_definition": "How much more profit each share represents than a year ago.",
+  "full_explanation": "How much more profit each share represents than a year ago.\n\nProfit divided by share count, compared with a year earlier.",
+  "worked_example": "Earnings of £1.20 per share against £1.00 is 20% growth.",
+  "how_to_read_it": "Higher is better. Above 25% is fast, 5–15% steady, negative means profits are falling.\n\nRead it alongside: Revenue growth. EPS can grow purely from buying back shares, which is not the same as the business improving.",
+  "common_mistakes": "Very noisy off a small base — going from £1m to £2m of profit is 100% growth and may mean nothing. We decline to compute it off a negative base at all.",
+  "related_slugs": [
+   "revenue_growth_yoy",
+   "eps_cagr_3y",
+   "growth"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Earnings per share",
+    "url": "https://www.investopedia.com/search?q=Earnings+per+share",
+    "source_type": "reference"
+   }
+  ],
+  "category": "growth"
+ },
+ {
+  "slug": "revenue_cagr_3y",
+  "term": "Revenue growth (3-year average)",
+  "aliases": [
+   "revenue CAGR",
+   "three-year revenue CAGR"
+  ],
+  "short_definition": "The steady annual rate that would take sales from where they were three years ago to where they are now.",
+  "full_explanation": "The steady annual rate that would take sales from where they were three years ago to where they are now.\n\nCompound annual growth rate over three years.",
+  "worked_example": "Sales rising from £100m to £173m over three years is 20% a year.",
+  "how_to_read_it": "Higher is better. Above 15% is strong, 5–10% ordinary. More trustworthy than a single year.\n\nRead it alongside: The single-year figure. If three-year growth is strong but this year is weak, something changed recently.",
+  "common_mistakes": "Hides the shape of the growth — steady 20% and a flat two years followed by a spike look identical.",
+  "related_slugs": [
+   "revenue_growth_yoy",
+   "cagr",
+   "growth"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: CAGR",
+    "url": "https://www.investopedia.com/search?q=CAGR",
+    "source_type": "reference"
+   }
+  ],
+  "category": "growth"
+ },
+ {
+  "slug": "eps_cagr_3y",
+  "term": "Earnings growth (3-year average)",
+  "aliases": [
+   "EPS CAGR",
+   "three-year EPS CAGR"
+  ],
+  "short_definition": "The steady annual rate of profit-per-share growth over three years.",
+  "full_explanation": "The steady annual rate of profit-per-share growth over three years.\n\nCompound annual growth rate of earnings per share.",
+  "worked_example": "EPS from £1.00 to £1.73 over three years is 20% a year.",
+  "how_to_read_it": "Higher is better. Above 15% is strong. Smooths out single-year noise.\n\nRead it alongside: Revenue CAGR — if earnings grew much faster than sales, margins expanded, and that may not continue.",
+  "common_mistakes": "Cannot be computed if profits were negative at either end, so it's often missing for recovering companies.",
+  "related_slugs": [
+   "eps_growth_yoy",
+   "cagr",
+   "growth"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: CAGR",
+    "url": "https://www.investopedia.com/search?q=CAGR",
+    "source_type": "reference"
+   }
+  ],
+  "category": "growth"
+ },
+ {
+  "slug": "fcf_growth_yoy",
+  "term": "Free cash flow growth",
+  "aliases": [
+   "free cash flow growth",
+   "FCF growth"
+  ],
+  "short_definition": "How much more spare cash the business generated than a year ago.",
+  "full_explanation": "How much more spare cash the business generated than a year ago.\n\nFree cash flow over twelve months compared with the prior twelve.",
+  "worked_example": "£120m against £100m is 20% growth.",
+  "how_to_read_it": "Higher is better, but expect it to be lumpier than revenue or profit growth.\n\nRead it alongside: Capital spending — cash flow can jump simply because investment was cut, which borrows from the future.",
+  "common_mistakes": "Very volatile. One large payment or delayed receipt can swing it wildly, so a single year means little.",
+  "related_slugs": [
+   "fcf",
+   "growth"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Free cash flow",
+    "url": "https://www.investopedia.com/search?q=Free+cash+flow",
+    "source_type": "reference"
+   }
+  ],
+  "category": "growth"
+ },
+ {
+  "slug": "price_vs_50dma",
+  "term": "Price vs 50-day average",
+  "aliases": [
+   "50-day moving average",
+   "50 day moving average",
+   "price vs 50dma",
+   "50dma"
+  ],
+  "short_definition": "How far the share price is above or below its average over the last ten weeks.",
+  "full_explanation": "How far the share price is above or below its average over the last ten weeks. A short-term read on direction.\n\nCurrent price compared with the mean closing price of the last 50 trading days.",
+  "worked_example": "A £10 share whose 50-day average is £9 sits 11% above it.",
+  "how_to_read_it": "Above zero means recent strength. Far above (say +15%) can mean momentum or over-extension.\n\nRead it alongside: The 200-day figure. Above the short average but below the long one is a bounce inside a downtrend.",
+  "common_mistakes": "Says nothing about the business. In a sharp market-wide move, everything moves together and it tells you about the market, not the company.",
+  "related_slugs": [
+   "price_vs_200dma",
+   "ma50_vs_ma200",
+   "trend"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Moving average",
+    "url": "https://www.investopedia.com/search?q=Moving+average",
+    "source_type": "reference"
+   }
+  ],
+  "category": "trend"
+ },
+ {
+  "slug": "price_vs_200dma",
+  "term": "Price vs 200-day average",
+  "aliases": [
+   "200-day moving average",
+   "200 day moving average",
+   "price vs 200dma",
+   "200dma"
+  ],
+  "short_definition": "How far the price is above or below its average over roughly the last year.",
+  "full_explanation": "How far the price is above or below its average over roughly the last year. The standard long-term trend measure.\n\nCurrent price compared with the mean close of the last 200 trading days.",
+  "worked_example": "A £10 share with a £7 average sits 43% above it.",
+  "how_to_read_it": "Above zero is conventionally an uptrend, below zero a downtrend.\n\nRead it alongside: The 50-day figure and the direction of the average itself.",
+  "common_mistakes": "Slow to react. It will still read 'uptrend' well after a peak, and 'downtrend' well after a bottom.",
+  "related_slugs": [
+   "price_vs_50dma",
+   "ma50_vs_ma200",
+   "trend"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: 200-day moving average",
+    "url": "https://www.investopedia.com/search?q=200-day+moving+average",
+    "source_type": "reference"
+   }
+  ],
+  "category": "trend"
+ },
+ {
+  "slug": "ma50_vs_ma200",
+  "term": "50-day vs 200-day average",
+  "aliases": [
+   "golden cross",
+   "death cross",
+   "moving average crossover"
+  ],
+  "short_definition": "Whether the short-term average is above the long-term one.",
+  "full_explanation": "Whether the short-term average is above the long-term one. A measure of whether the trend itself is strengthening.\n\nThe 50-day average compared with the 200-day average.",
+  "worked_example": "A 50-day average of £9 against a 200-day of £7.50 is 20% above.",
+  "how_to_read_it": "Positive means the recent trend is stronger than the long one.\n\nRead it alongside: Price versus each average.",
+  "common_mistakes": "Whipsaws badly in sideways markets, flipping repeatedly with no useful signal.",
+  "related_slugs": [
+   "price_vs_50dma",
+   "price_vs_200dma",
+   "trend"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Golden cross",
+    "url": "https://www.investopedia.com/search?q=Golden+cross",
+    "source_type": "reference"
+   },
+   {
+    "label": "Investopedia: Death cross",
+    "url": "https://www.investopedia.com/search?q=Death+cross",
+    "source_type": "reference"
+   }
+  ],
+  "category": "trend"
+ },
+ {
+  "slug": "pct_above_52w_low",
+  "term": "Distance above the 52-week low",
+  "aliases": [
+   "52-week low",
+   "52 week low",
+   "percent above 52-week low"
+  ],
+  "short_definition": "How far the price has risen from its lowest point in the last year.",
+  "full_explanation": "How far the price has risen from its lowest point in the last year.\n\nCurrent price compared with the lowest close of the last 52 weeks.",
+  "worked_example": "A £10 share that bottomed at £5 is 100% above its low.",
+  "how_to_read_it": "Higher means further from the bottom. Near zero means the price is at or near its worst in a year.\n\nRead it alongside: Distance from the 52-week high, which tells the other half of the story.",
+  "common_mistakes": "A stock can be far above its low and still far below where it started. It measures recovery, not value.",
+  "related_slugs": [
+   "trend"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: 52-week high/low",
+    "url": "https://www.investopedia.com/search?q=52-week+high%2Flow",
+    "source_type": "reference"
+   }
+  ],
+  "category": "trend"
+ },
+ {
+  "slug": "return_3m",
+  "term": "3-month return",
+  "aliases": [
+   "three-month return",
+   "3-month return"
+  ],
+  "short_definition": "How much the share has gained or lost over the last quarter.",
+  "full_explanation": "How much the share has gained or lost over the last quarter.\n\nPrice change over roughly 63 trading days, using prices adjusted for dividends and splits.",
+  "worked_example": "£10 rising to £11.50 over three months is a 15% return.",
+  "how_to_read_it": "Higher is better for a momentum reading. Momentum tends to persist over months and reverse over years.\n\nRead it alongside: The 6- and 12-month figures. Strong short-term but weak long-term returns is a bounce, not a trend.",
+  "common_mistakes": "Heavily influenced by whatever the whole market did. It tells you nothing about whether the price is justified.",
+  "related_slugs": [
+   "return_6m",
+   "return_12m",
+   "momentum"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Momentum investing",
+    "url": "https://www.investopedia.com/search?q=Momentum+investing",
+    "source_type": "reference"
+   }
+  ],
+  "category": "momentum"
+ },
+ {
+  "slug": "return_6m",
+  "term": "6-month return",
+  "aliases": [
+   "six-month return",
+   "6-month return"
+  ],
+  "short_definition": "The share's gain or loss over the last half year.",
+  "full_explanation": "The share's gain or loss over the last half year.\n\nPrice change over roughly 126 trading days, adjusted for dividends and splits.",
+  "worked_example": "£10 to £12 over six months is 20%.",
+  "how_to_read_it": "Higher is better for momentum. This window is where momentum effects are usually strongest.\n\nRead it alongside: The 12-month figure and earnings revisions.",
+  "common_mistakes": "Same market-wide problem as the 3-month figure, and it can be dominated by one event.",
+  "related_slugs": [
+   "return_3m",
+   "return_12m",
+   "momentum"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Momentum investing",
+    "url": "https://www.investopedia.com/search?q=Momentum+investing",
+    "source_type": "reference"
+   }
+  ],
+  "category": "momentum"
+ },
+ {
+  "slug": "return_12m",
+  "term": "12-month return",
+  "aliases": [
+   "twelve-month return",
+   "12-month return",
+   "one-year return"
+  ],
+  "short_definition": "The share's gain or loss over the last year.",
+  "full_explanation": "The share's gain or loss over the last year.\n\nPrice change over roughly 252 trading days, adjusted for dividends and splits.",
+  "worked_example": "£10 to £17 over a year is 70%.",
+  "how_to_read_it": "Higher is better for momentum, though very high figures often mean expectations are now extremely high too.\n\nRead it alongside: Valuation. A very strong year often means the value lens now reads expensive.",
+  "common_mistakes": "Long-run winners tend to mean-revert. The strongest 12-month returns are frequently followed by disappointment.",
+  "related_slugs": [
+   "return_3m",
+   "return_6m",
+   "momentum"
+  ],
+  "external_links": [
+   {
+    "label": "Jegadeesh & Titman, Returns to Buying Winners (PDF)",
+    "url": "https://www.jstor.org/stable/2328882",
+    "source_type": "paper"
+   }
+  ],
+  "category": "momentum"
+ },
+ {
+  "slug": "earnings_revision_3m",
+  "term": "Earnings revisions (3 months)",
+  "aliases": [
+   "earnings revision",
+   "estimate revision",
+   "analyst revision"
+  ],
+  "short_definition": "Whether professional analysts have raised or cut their profit forecasts over the last quarter.",
+  "full_explanation": "Whether professional analysts have raised or cut their profit forecasts over the last quarter. A measure of whether the story is improving.\n\nThe change in the average forecast for this year's earnings per share over the last 90 days.",
+  "worked_example": "A consensus forecast moving from £1.00 to £1.10 is a 10% upward revision.",
+  "how_to_read_it": "Positive means forecasts are rising. Above 10% is a strong upgrade cycle, negative means downgrades.\n\nRead it alongside: Price returns. Rising forecasts with a flat price can mean the market hasn't caught up.",
+  "common_mistakes": "Analysts herd and lag. We can only capture this going forward — the provider gives today's snapshot, not history, so there is nothing before the day we started recording.",
+  "related_slugs": [
+   "momentum",
+   "consensus"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Earnings estimate",
+    "url": "https://www.investopedia.com/search?q=Earnings+estimate",
+    "source_type": "reference"
+   }
+  ],
+  "category": "momentum"
+ },
+ {
+  "slug": "inventory_to_sales",
+  "term": "Inventory to sales",
+  "aliases": [
+   "inventory to sales",
+   "inventory/sales"
+  ],
+  "short_definition": "How much unsold stock the company holds relative to what it sells.",
+  "full_explanation": "How much unsold stock the company holds relative to what it sells. A key early warning in manufacturing.\n\nInventory on the balance sheet divided by annual sales.",
+  "worked_example": "£100m of stock against £1bn of sales is 0.10.",
+  "how_to_read_it": "Lower is leaner. Rising values mean stock is piling up faster than it's selling.\n\nRead it alongside: Days inventory and its direction. The change matters more than the level.",
+  "common_mistakes": "Only meaningful for businesses that hold physical stock. Meaningless for software or services, which is why Cycle only applies to some sectors.",
+  "related_slugs": [
+   "days_inventory",
+   "days_inventory_change",
+   "cycle"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Inventory-to-sales ratio",
+    "url": "https://www.investopedia.com/search?q=Inventory-to-sales+ratio",
+    "source_type": "reference"
+   }
+  ],
+  "category": "cycle"
+ },
+ {
+  "slug": "days_inventory",
+  "term": "Days inventory",
+  "aliases": [
+   "days inventory",
+   "days inventory outstanding",
+   "DIO"
+  ],
+  "short_definition": "How many days of sales the company is holding as unsold stock.",
+  "full_explanation": "How many days of sales the company is holding as unsold stock.\n\nInventory divided by the cost of goods sold over twelve months, multiplied by 365.",
+  "worked_example": "Stock worth 90 days of production cost means about three months of goods sitting in warehouses.",
+  "how_to_read_it": "Lower is leaner. What counts as normal varies enormously — chipmakers routinely hold more than retailers.\n\nRead it alongside: The change in days inventory, which is the more informative number. 94 days falling and 94 days rising mean opposite things.",
+  "common_mistakes": "The level alone is nearly useless without either the trend or a peer comparison.",
+  "related_slugs": [
+   "inventory_to_sales",
+   "days_inventory_change",
+   "cycle"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Days inventory outstanding",
+    "url": "https://www.investopedia.com/search?q=Days+inventory+outstanding",
+    "source_type": "reference"
+   }
+  ],
+  "category": "cycle"
+ },
+ {
+  "slug": "days_inventory_change",
+  "term": "Change in days inventory",
+  "aliases": [
+   "days inventory change",
+   "inventory days change"
+  ],
+  "short_definition": "Whether stock is building up or being drawn down compared with a year ago.",
+  "full_explanation": "Whether stock is building up or being drawn down compared with a year ago. In a cyclical business this is often the earliest signal of a turn.\n\nDays inventory now, minus days inventory a year ago.",
+  "worked_example": "Falling from 120 to 94 days is a change of −26 days — stock clearing faster.",
+  "how_to_read_it": "Negative is better. Falling inventory alongside firm prices signals a tightening market; rising inventory signals a glut forming.\n\nRead it alongside: The level, and average selling prices. Falling stock with falling prices is demand collapsing, not tightening.",
+  "common_mistakes": "Needs a comparable period roughly a year back. If the reporting calendar shifted or history is missing, we show no value rather than compare the wrong periods.",
+  "related_slugs": [
+   "days_inventory",
+   "cycle"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Inventory turnover",
+    "url": "https://www.investopedia.com/search?q=Inventory+turnover",
+    "source_type": "reference"
+   }
+  ],
+  "category": "cycle"
+ },
+ {
+  "slug": "capacity_utilisation",
+  "term": "Capacity utilisation",
+  "aliases": [
+   "capacity utilisation",
+   "capacity utilization"
+  ],
+  "short_definition": "How much of the factory is actually running.",
+  "full_explanation": "How much of the factory is actually running. High utilisation means pricing power; low means price wars.\n\nOutput as a percentage of maximum possible output.",
+  "worked_example": "A plant running at 85% of what it could produce.",
+  "how_to_read_it": "Higher is better for the producer. Above 90% usually means prices can rise; below 70% usually means they fall.\n\nRead it alongside: Average selling prices, which is where utilisation shows up in the accounts.",
+  "common_mistakes": "Not reported in financial statements — it comes from industry surveys we don't currently have, so this metric is unavailable and reduces Cycle coverage.",
+  "related_slugs": [
+   "cycle"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Capacity utilization rate",
+    "url": "https://www.investopedia.com/search?q=Capacity+utilization+rate",
+    "source_type": "reference"
+   }
+  ],
+  "category": "cycle"
+ },
+ {
+  "slug": "asp_change_yoy",
+  "term": "Average selling price change",
+  "aliases": [
+   "ASP",
+   "average selling price",
+   "average selling price change"
+  ],
+  "short_definition": "Whether the company is getting more or less for each unit it sells than a year ago.",
+  "full_explanation": "Whether the company is getting more or less for each unit it sells than a year ago.\n\nAverage price per unit compared with a year earlier.",
+  "worked_example": "Prices up 4% year on year.",
+  "how_to_read_it": "Positive is better for the producer. In commodity industries this swings violently.\n\nRead it alongside: Capacity utilisation and inventory direction — together they describe the cycle.",
+  "common_mistakes": "Not in financial statements; needs industry data we don't have, so it's unavailable and reduces Cycle coverage.",
+  "related_slugs": [
+   "cycle"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Average selling price",
+    "url": "https://www.investopedia.com/search?q=Average+selling+price",
+    "source_type": "reference"
+   }
+  ],
+  "category": "cycle"
+ },
+ {
+  "slug": "book_to_bill",
+  "term": "Book to bill",
+  "aliases": [
+   "book to bill",
+   "book-to-bill",
+   "book-to-bill ratio"
+  ],
+  "short_definition": "Whether new orders are arriving faster than existing ones are being shipped.",
+  "full_explanation": "Whether new orders are arriving faster than existing ones are being shipped. Above 1 means the order book is growing.\n\nOrders received divided by orders shipped in the same period.",
+  "worked_example": "A ratio of 1.1 means ten new orders for every nine shipped.",
+  "how_to_read_it": "Above 1 is expansion, below 1 contraction. Sustained readings matter more than one month.\n\nRead it alongside: Inventory direction. Rising orders with falling stock is a genuinely tightening market.",
+  "common_mistakes": "Not in financial statements; requires order-book disclosure we don't have, so it's unavailable and reduces Cycle coverage.",
+  "related_slugs": [
+   "cycle"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Book-to-bill ratio",
+    "url": "https://www.investopedia.com/search?q=Book-to-bill+ratio",
+    "source_type": "reference"
+   }
+  ],
+  "category": "cycle"
+ },
+ {
+  "slug": "ebitda",
+  "term": "EBITDA",
+  "aliases": [
+   "EBITDA"
+  ],
+  "short_definition": "Profit before interest, tax, and the accounting charges for assets wearing out.",
+  "full_explanation": "Profit before interest, tax, and the accounting charges for assets wearing out. A rough proxy for the cash a business throws off before financing decisions.\n\nOperating profit with depreciation and amortisation added back.",
+  "worked_example": "£300m of operating profit plus £100m of depreciation is £400m of EBITDA.",
+  "how_to_read_it": "Bigger is better in absolute terms, but it's used mainly as the denominator in other ratios.\n\nRead it alongside: Free cash flow. EBITDA deliberately ignores the cost of replacing worn-out assets, which is a real cost.",
+  "common_mistakes": "Famously flattering. Charlie Munger called it 'bullshit earnings' because it ignores genuine expenses.",
+  "related_slugs": [
+   "ev_ebitda",
+   "net_debt_to_ebitda",
+   "fcf"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: EBITDA",
+    "url": "https://www.investopedia.com/search?q=EBITDA",
+    "source_type": "reference"
+   },
+   {
+    "label": "Corporate Finance Institute: EBITDA",
+    "url": "https://corporatefinanceinstitute.com/resources/valuation/what-is-ebitda/",
+    "source_type": "reference"
+   }
+  ],
+  "category": "context"
+ },
+ {
+  "slug": "fcf",
+  "term": "Free cash flow",
+  "aliases": [
+   "free cash flow",
+   "FCF"
+  ],
+  "short_definition": "The cash left over after running the business and paying for the equipment and property it needs.",
+  "full_explanation": "The cash left over after running the business and paying for the equipment and property it needs. The money genuinely available to owners.\n\nCash from operations minus capital expenditure.",
+  "worked_example": "£400m from operations less £250m of capital spending is £150m free.",
+  "how_to_read_it": "Positive and growing is what you want. Negative may be investment or may be decline.\n\nRead it alongside: Net income. Persistent gaps between the two are worth understanding.",
+  "common_mistakes": "Lumpy for businesses with large investment cycles. A single year tells you little.",
+  "related_slugs": [
+   "fcf_yield",
+   "fcf_conversion",
+   "ebitda"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Free cash flow",
+    "url": "https://www.investopedia.com/search?q=Free+cash+flow",
+    "source_type": "reference"
+   },
+   {
+    "label": "Corporate Finance Institute: Free cash flow",
+    "url": "https://corporatefinanceinstitute.com/resources/valuation/what-is-free-cash-flow-fcf/",
+    "source_type": "reference"
+   }
+  ],
+  "category": "context"
+ },
+ {
+  "slug": "trend",
+  "term": "Trend",
+  "aliases": [
+   "trend lens",
+   "trend score"
+  ],
+  "short_definition": "Whether the share price has been going up or down lately, and how convincingly.",
+  "full_explanation": "Trend reads the price against its own recent history and nothing else. It asks whether the price is above the average of the last fifty days and the last two hundred days, and whether the shorter average has crossed above the longer one.\n\nIt knows nothing about the business. A company can be in a perfect uptrend while its accounts quietly fall apart, and the trend will be the last thing to notice.",
+  "worked_example": "A share at 120p, with a fifty-day average of 110p and a two-hundred-day average of 100p, is above both and rising — a high trend score. If the price then falls to 95p, it drops below both averages and the score falls sharply.",
+  "how_to_read_it": "Higher means the price has been rising steadily. It does not mean the company is good, or that the rise will continue. Treat a high trend score as a description of the past, not a forecast.",
+  "common_mistakes": "The commonest error is reading trend as confirmation of a view you already hold. It is the easiest lens to over-trust because it agrees with whatever the market has just done.",
+  "related_slugs": [
+   "price_vs_50dma",
+   "price_vs_200dma",
+   "ma50_vs_ma200",
+   "lens",
+   "momentum"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Moving average",
+    "url": "https://en.wikipedia.org/wiki/Moving_average",
+    "source_type": "reference"
+   },
+   {
+    "label": "Investopedia: Trend analysis",
+    "url": "https://www.investopedia.com/search?q=trend+analysis",
+    "source_type": "reference"
+   }
+  ],
+  "category": "lens"
+ },
+ {
+  "slug": "growth",
+  "term": "Growth",
+  "aliases": [
+   "growth lens",
+   "growth score"
+  ],
+  "short_definition": "How fast the company's sales, profits and cash have been increasing.",
+  "full_explanation": "Growth compares the most recent twelve months against the same period a year earlier, and against three years earlier, for revenue, earnings per share and free cash flow.\n\nIt measures what has already happened. A company growing at thirty per cent may be about to slow, and this lens cannot tell you.",
+  "worked_example": "A company whose sales went from £200m to £250m has grown twenty-five per cent. If profits grew faster, at forty per cent, that usually means margins improved too.",
+  "how_to_read_it": "Higher means faster recent growth. Read it next to value: fast growth already reflected in a high price is not an opportunity, it is a bill you have already paid.",
+  "common_mistakes": "Growth from a very low base looks spectacular and often means little — a company recovering from a bad year shows huge percentages that will not repeat. One-off items in a single year distort it badly.",
+  "related_slugs": [
+   "revenue_growth_yoy",
+   "eps_growth_yoy",
+   "revenue_cagr_3y",
+   "value",
+   "lens"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Growth investing",
+    "url": "https://www.investopedia.com/search?q=growth+investing",
+    "source_type": "reference"
+   }
+  ],
+  "category": "lens"
+ },
+ {
+  "slug": "quality",
+  "term": "Quality",
+  "aliases": [
+   "quality lens",
+   "quality score"
+  ],
+  "short_definition": "How good the underlying business is at turning money invested into profit, and how safely it is financed.",
+  "full_explanation": "Quality looks at return on invested capital, gross profitability, how reliably profit turns into actual cash, and how much debt the company carries relative to its earnings.\n\nIt is the lens that most often disagrees with value, and that disagreement is usually the interesting part.",
+  "worked_example": "A company earning £150m on £750m of invested capital has a twenty per cent return on capital — for every pound put into the business, it makes twenty pence a year.",
+  "how_to_read_it": "Higher means a better business. It says nothing about whether the price is sensible. A superb business at a ruinous price scores identically to a superb business at a fair one.",
+  "common_mistakes": "Quality flatters companies at a cyclical peak, when returns look permanent but are temporary. A chip maker at the top of its cycle can post extraordinary numbers that will halve within two years.",
+  "related_slugs": [
+   "roic",
+   "gross_profitability",
+   "fcf_conversion",
+   "net_debt_to_ebitda",
+   "value",
+   "lens"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Return on capital",
+    "url": "https://en.wikipedia.org/wiki/Return_on_capital",
+    "source_type": "reference"
+   },
+   {
+    "label": "Novy-Marx, The Other Side of Value (PDF)",
+    "url": "https://rnm.simon.rochester.edu/research/OSoV.pdf",
+    "source_type": "paper"
+   }
+  ],
+  "category": "lens"
+ },
+ {
+  "slug": "value",
+  "term": "Value",
+  "aliases": [
+   "value lens",
+   "value score"
+  ],
+  "short_definition": "How much you are paying for what the company actually earns and owns.",
+  "full_explanation": "Value combines several measures of cheapness: what you pay per pound of profit, what you would pay to buy the whole business including its debt, the spare cash it throws off as a percentage of its price, and what you pay against the accounting value of its assets.\n\nA high value score means cheap, not good.",
+  "worked_example": "Two companies both earn £100m a year. One costs £1bn, the other £3bn. The first has a value score far higher than the second — you are paying a third as much for the same profit.",
+  "how_to_read_it": "Higher means cheaper. Cheap is not the same as underpriced. The market is often right that a company deserves to be cheap, and telling those two situations apart is the actual work.",
+  "common_mistakes": "The value trap: a company screens cheapest exactly when its profits are about to fall. Cyclical businesses at their peak look like bargains and are not.",
+  "related_slugs": [
+   "pe_ratio",
+   "ev_ebitda",
+   "fcf_yield",
+   "price_to_book",
+   "quality",
+   "lens"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Value investing",
+    "url": "https://en.wikipedia.org/wiki/Value_investing",
+    "source_type": "reference"
+   },
+   {
+    "label": "Investopedia: Value investing",
+    "url": "https://www.investopedia.com/search?q=value+investing",
+    "source_type": "reference"
+   }
+  ],
+  "category": "lens"
+ },
+ {
+  "slug": "momentum",
+  "term": "Momentum",
+  "aliases": [
+   "momentum lens",
+   "momentum score"
+  ],
+  "short_definition": "Whether the shares have outperformed recently, and whether analysts have been raising their forecasts.",
+  "full_explanation": "Momentum measures returns over three, six and twelve months, plus how analyst earnings estimates have moved over the last three months.\n\nIt differs from trend in that it compares performance against other companies, and includes what analysts are doing rather than only what the price is doing.",
+  "worked_example": "A share up eighteen per cent over twelve months when the typical company in its sector is up four per cent scores well on momentum.",
+  "how_to_read_it": "Higher means recent outperformance. Momentum has historically persisted over months and reversed over years, so a high score is a short-horizon observation, not a long-term one.",
+  "common_mistakes": "Momentum reverses hardest exactly when it has worked best and for longest. Crowded momentum unwinds violently, and the score gives no warning before it happens.",
+  "related_slugs": [
+   "return_3m",
+   "return_6m",
+   "return_12m",
+   "earnings_revision_3m",
+   "trend",
+   "lens"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Momentum (finance)",
+    "url": "https://en.wikipedia.org/wiki/Momentum_(finance)",
+    "source_type": "reference"
+   },
+   {
+    "label": "Jegadeesh & Titman, Returns to Buying Winners",
+    "url": "https://www.jstor.org/stable/2328882",
+    "source_type": "paper"
+   }
+  ],
+  "category": "lens"
+ },
+ {
+  "slug": "cycle",
+  "term": "Cycle",
+  "aliases": [
+   "cycle lens",
+   "cycle score"
+  ],
+  "short_definition": "Where a company sits in the boom-and-bust rhythm of its industry — only meaningful for industries that have one.",
+  "full_explanation": "Cycle reads inventory levels, how long stock sits before selling, factory capacity in use, selling prices and the ratio of new orders to deliveries.\n\nIt applies only to industries with a genuine cycle: semiconductors, materials, energy, industrials. On a consumer staples company it would be noise dressed as signal, so Prism marks it not applicable rather than printing a number.",
+  "worked_example": "A chip maker whose stock has gone from forty days of inventory to seventy days is accumulating unsold product — usually an early warning that demand is turning.",
+  "how_to_read_it": "Higher means better placed in the cycle: lean inventory, rising prices, orders exceeding shipments. Low means the opposite. Where it says not applicable, that is a deliberate refusal, not missing data.",
+  "common_mistakes": "The cycle turns before the accounts show it. By the time the reported numbers look bad the shares have usually already fallen, and by the time they look good the shares have usually already risen.",
+  "related_slugs": [
+   "inventory_to_sales",
+   "days_inventory",
+   "book_to_bill",
+   "capacity_utilisation",
+   "lens"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Business cycle",
+    "url": "https://www.investopedia.com/search?q=business+cycle",
+    "source_type": "reference"
+   },
+   {
+    "label": "Wikipedia: Business cycle",
+    "url": "https://en.wikipedia.org/wiki/Business_cycle",
+    "source_type": "reference"
+   }
+  ],
+  "category": "lens"
+ },
+ {
+  "slug": "lens",
+  "term": "Lens",
+  "aliases": [
+   "lenses"
+  ],
+  "short_definition": "One of six different ways of judging a company, each deliberately blind to what the others see.",
+  "full_explanation": "Prism scores every company through six lenses: trend, growth, quality, value, momentum and cycle. Each uses a different set of measures and each has a known blind spot.\n\nThe point is not to average them into a single verdict. It is that when two lenses disagree sharply about the same company, that disagreement is a research question worth chasing.",
+  "worked_example": "Ford might score ninety-two on value and eleven on growth. Neither number is wrong. Together they say: very cheap, and shrinking — now go and find out whether the shrinking is temporary.",
+  "how_to_read_it": "Each lens runs zero to a hundred, where a hundred is best for that lens's own thesis. There is no combined score, on purpose.",
+  "common_mistakes": "Treating a lens score as a verdict. It is one methodology's view, computed from what the accounts said, and it does not know anything the accounts do not contain.",
+  "related_slugs": [
+   "dispersion",
+   "coverage",
+   "relative_and_absolute",
+   "trend",
+   "growth",
+   "quality",
+   "value",
+   "momentum",
+   "cycle"
+  ],
+  "external_links": [],
+  "category": "platform"
+ },
+ {
+  "slug": "dispersion",
+  "term": "Dispersion",
+  "aliases": [
+   "lens disagreement",
+   "disagreement",
+   "spread between lenses"
+  ],
+  "short_definition": "How much the six lenses disagree about the same company.",
+  "full_explanation": "Dispersion is the gap between the highest and lowest lens score for a company. A high number means the lenses are telling different stories.\n\nIt is the headline sorting measure in Prism because agreement is boring: when every lens says the same thing, the market has almost certainly noticed. Disagreement is where the unresolved questions are.",
+  "worked_example": "A company scoring ninety on value and eight on growth has a dispersion of eighty-two. A company scoring fifty on everything has a dispersion near zero — nothing to investigate.",
+  "how_to_read_it": "Higher means more disagreement, which means more worth investigating — not more attractive. Which two lenses are pulling apart matters as much as the size of the gap, so Prism names them.",
+  "common_mistakes": "Reading dispersion as a quality signal. It is a signal that something needs explaining, and the explanation is often that the cheap company deserves to be cheap.",
+  "related_slugs": [
+   "lens",
+   "coverage"
+  ],
+  "external_links": [],
+  "category": "platform"
+ },
+ {
+  "slug": "coverage",
+  "term": "Coverage",
+  "aliases": [
+   "data coverage"
+  ],
+  "short_definition": "How much of the data a lens needs was actually available.",
+  "full_explanation": "Each lens needs several measures. Coverage is the fraction it managed to compute. If fewer than half are available, Prism shows no score at all rather than a score built on fragments.\n\nA score built on two measures out of five looks exactly as confident as one built on all five, which is why the fragmentary one is refused.",
+  "worked_example": "If the value lens needs five measures and only two could be calculated, coverage is 0.4 — below the threshold, so the lens shows no score rather than a misleadingly confident number.",
+  "how_to_read_it": "One means everything was available. Below 0.5 means no score is shown. A blank is a deliberate refusal to guess, not a bug.",
+  "common_mistakes": "Assuming a blank means the company scores badly. It means Prism does not know, which is a different and more honest statement.",
+  "related_slugs": [
+   "lens",
+   "point_in_time"
+  ],
+  "external_links": [],
+  "category": "platform"
+ },
+ {
+  "slug": "relative_and_absolute",
+  "term": "Relative and absolute scores",
+  "aliases": [
+   "relative score",
+   "absolute score",
+   "relative premium",
+   "premium vs sector"
+  ],
+  "short_definition": "Two different answers to 'is this good' — one against the company's industry peers, one against fixed standards.",
+  "full_explanation": "The relative score ranks a company against others in its sector. The absolute score measures it against fixed thresholds that do not move.\n\nBoth are true at once, and the gap between them is the interesting part. A company can rank first among oil producers while being expensive by any absolute standard, because the whole sector is expensive.",
+  "worked_example": "A bank scoring seventy relative but thirty absolute is cheap compared with other banks and expensive compared with history. That gap is the signal that the sector, not the company, is what is unusual.",
+  "how_to_read_it": "Read them together. A large positive gap on value means cheap-within-an-expensive-sector, which is the classic cyclical-peak trap.",
+  "common_mistakes": "Using only the relative score. In a sector that is uniformly overpriced, ranking well against peers tells you almost nothing useful.",
+  "related_slugs": [
+   "lens",
+   "value",
+   "sector_median"
+  ],
+  "external_links": [],
+  "category": "platform"
+ },
+ {
+  "slug": "sector_median",
+  "term": "Sector median",
+  "aliases": [
+   "median for the sector"
+  ],
+  "short_definition": "The middle value across every company in the same industry.",
+  "full_explanation": "The median is the middle number when you line them all up — half are above, half below. Prism shows the sector median next to each company's score so you can see whether a number is unusual or ordinary for that industry.\n\nThe median is used rather than the average because one extreme company distorts an average and does not move a median.",
+  "worked_example": "If eleven software companies have value scores and the sixth-highest is 44, the sector median is 44 — regardless of whether the top one scores 99 or 999.",
+  "how_to_read_it": "It is the benchmark, not a target. A company at the sector median is unremarkable within its industry, which may be fine or may be the point.",
+  "common_mistakes": "Comparing a company against the median of a different sector. A price-to-book of three is ordinary for software and extraordinary for a bank.",
+  "related_slugs": [
+   "relative_and_absolute",
+   "median",
+   "lens"
+  ],
+  "external_links": [],
+  "category": "platform"
+ },
+ {
+  "slug": "point_in_time",
+  "term": "Point-in-time",
+  "aliases": [
+   "point in time",
+   "as-of",
+   "published_at",
+   "as it was known"
+  ],
+  "short_definition": "Using only what was actually known on a given date, rather than what we know now.",
+  "full_explanation": "Every figure in Prism carries the date it was published, not just the period it describes. A company's results for the quarter ending in March might not be published until May, so on the first of April that data did not exist yet.\n\nThis matters enormously for testing strategies. Using March's figures on the first of April would mean trading on information nobody had.",
+  "worked_example": "Micron's quarter ended 31 May 2026 but was not reported until 24 June. Any test that used those figures before 24 June would be using knowledge from the future.",
+  "how_to_read_it": "If something is marked point-in-time it is safe to use in a historical test. Where a publication date had to be estimated, Prism flags it, because an estimated date is a weaker guarantee.",
+  "common_mistakes": "Assuming a data provider gives you this by default. Most do not — they overwrite figures when companies restate them, quietly destroying the record of what was originally believed.",
+  "related_slugs": [
+   "lookahead_bias",
+   "backtest",
+   "coverage"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Look-ahead bias",
+    "url": "https://www.investopedia.com/search?q=look-ahead+bias",
+    "source_type": "reference"
+   },
+   {
+    "label": "Wikipedia: Backtesting",
+    "url": "https://en.wikipedia.org/wiki/Backtesting",
+    "source_type": "reference"
+   }
+  ],
+  "category": "platform"
+ },
+ {
+  "slug": "consensus",
+  "term": "Consensus estimate",
+  "aliases": [
+   "consensus",
+   "analyst estimate",
+   "analyst forecast"
+  ],
+  "short_definition": "The average of what professional analysts expect a company to earn.",
+  "full_explanation": "Banks and research firms publish forecasts for company earnings. The consensus is roughly the average of them, and it is what a company is measured against when it reports.\n\nBeating consensus is not the same as doing well. A company can grow profits strongly and still fall short of what analysts expected, and the shares will usually fall.",
+  "worked_example": "If analysts expect earnings of £2.10 per share and the company reports £2.40, that is a fourteen per cent beat — a positive surprise.",
+  "how_to_read_it": "Read the direction of change, not just the level. Estimates being revised upward over months usually matters more than the current number.",
+  "common_mistakes": "Treating consensus as a forecast of truth. It is a forecast of a forecast, and it drifts toward whatever management has been guiding.",
+  "related_slugs": [
+   "earnings_revision_3m",
+   "surprise",
+   "momentum"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Consensus estimate",
+    "url": "https://www.investopedia.com/search?q=consensus+estimate",
+    "source_type": "reference"
+   }
+  ],
+  "category": "platform"
+ },
+ {
+  "slug": "surprise",
+  "term": "Earnings surprise",
+  "aliases": [
+   "surprise",
+   "earnings beat",
+   "beat",
+   "miss"
+  ],
+  "short_definition": "The gap between what a company actually earned and what analysts expected.",
+  "full_explanation": "Expressed as a percentage of the expectation. Positive means the company earned more than expected — a beat. Negative means less — a miss.\n\nShare prices react to the surprise rather than the result, which is why a company can report record profits and fall.",
+  "worked_example": "Expected £2.10, reported £2.40: a surprise of about plus fourteen per cent.",
+  "how_to_read_it": "Consistent large beats often mean management guides analysts low rather than that the business keeps outperforming. Look at the pattern across several quarters, not one.",
+  "common_mistakes": "Assuming a beat is good news for the share price. If the market expected a bigger beat than the analysts did, a beat can still send the shares down.",
+  "related_slugs": [
+   "consensus",
+   "earnings_revision_3m"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Earnings surprise",
+    "url": "https://www.investopedia.com/search?q=earnings+surprise",
+    "source_type": "reference"
+   }
+  ],
+  "category": "platform"
+ },
+ {
+  "slug": "cagr",
+  "term": "CAGR",
+  "aliases": [
+   "compound annual growth rate",
+   "annualised growth rate",
+   "annualized growth rate"
+  ],
+  "short_definition": "The steady yearly rate that would take you from a starting value to an ending value over several years.",
+  "full_explanation": "Growth is rarely smooth, so CAGR smooths it into a single annual rate. It answers: if this had grown at the same rate every year, what rate would that be?\n\nIt deliberately hides the path. A company that grew forty per cent then fell twenty per cent has the same CAGR as one that grew steadily to the same place.",
+  "worked_example": "Revenue rising from £100m to £172.8m over three years is a CAGR of twenty per cent — because 100 x 1.2 x 1.2 x 1.2 = 172.8.",
+  "how_to_read_it": "Higher means faster compound growth. Always check the start and end points: a period beginning in a bad year flatters the rate enormously.",
+  "common_mistakes": "Being fooled by the smoothing. CAGR over a period that starts at a trough and ends at a peak describes the choice of dates as much as the business.",
+  "related_slugs": [
+   "revenue_cagr_3y",
+   "eps_cagr_3y",
+   "growth"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: CAGR",
+    "url": "https://www.investopedia.com/search?q=compound+annual+growth+rate",
+    "source_type": "reference"
+   },
+   {
+    "label": "Wikipedia: Compound annual growth rate",
+    "url": "https://en.wikipedia.org/wiki/Compound_annual_growth_rate",
+    "source_type": "reference"
+   }
+  ],
+  "category": "growth"
+ },
+ {
+  "slug": "backtest",
+  "term": "Backtest",
+  "aliases": [
+   "backtesting",
+   "backtested"
+  ],
+  "short_definition": "Testing a trading idea against historical data to see whether it would have worked.",
+  "full_explanation": "You define a rule — buy ten days before a company reports, sell two days before — then replay it across years of past prices and count what happened.\n\nThe result is only as honest as the rules you impose on yourself. It is very easy to build a backtest that shows a profit and means nothing.",
+  "worked_example": "Prism's pre-earnings backtest ran 31,654 simulated trades across 527 companies between 2010 and 2026.",
+  "how_to_read_it": "A backtest result is a hypothesis, not a finding. The question is always what would have to be true for the result to be an illusion, and whether you have checked it.",
+  "common_mistakes": "Believing the headline number. Most backtests fail for one of four reasons: they use information that was not available at the time, they ignore trading costs, they test a universe of survivors, or they try many variations and report the best one.",
+  "related_slugs": [
+   "lookahead_bias",
+   "survivorship_bias",
+   "drift_control",
+   "multiple_comparisons",
+   "excess_return"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Backtesting",
+    "url": "https://en.wikipedia.org/wiki/Backtesting",
+    "source_type": "reference"
+   },
+   {
+    "label": "Investopedia: Backtesting",
+    "url": "https://www.investopedia.com/search?q=backtesting",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "excess_return",
+  "term": "Excess return",
+  "aliases": [
+   "excess",
+   "excess over drift",
+   "edge"
+  ],
+  "short_definition": "How much better a strategy did than a fair comparison — not how much it made.",
+  "full_explanation": "A strategy that buys shares and holds them for six days will usually make money, because markets drift upward. That is not skill, it is just being invested.\n\nExcess return subtracts what you would have earned anyway. It is the only number that says whether the idea itself added anything.",
+  "worked_example": "Prism's pre-earnings strategy returned 0.239% per trade. Buying the same shares on random dates for the same six days returned 0.173%. The excess is 0.066% — and that is the real result.",
+  "how_to_read_it": "This is the number to look at first. If the excess is near zero, the strategy is an expensive way of doing nothing. Trading costs are paid on both sides of the comparison, so they cancel out here — a positive excess still has to be big enough to be worth the effort.",
+  "common_mistakes": "Quoting the headline return. Roughly seventy per cent of that pre-earnings return was simply the market going up.",
+  "related_slugs": [
+   "drift_control",
+   "backtest",
+   "basis_point"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Alpha (finance)",
+    "url": "https://en.wikipedia.org/wiki/Alpha_(finance)",
+    "source_type": "reference"
+   },
+   {
+    "label": "Investopedia: Excess returns",
+    "url": "https://www.investopedia.com/search?q=excess+returns",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "drift_control",
+  "term": "Drift control",
+  "aliases": [
+   "control",
+   "unconditional drift",
+   "random hold"
+  ],
+  "short_definition": "A deliberately dumb comparison: what you would have made by buying at random.",
+  "full_explanation": "For every strategy result, Prism runs the same trades on random dates in the same shares for the same number of days. If the strategy cannot beat picking dates out of a hat, it has no edge.\n\nWhere a strategy is selected on some characteristic — high volatility, say — the control is matched on that characteristic too, otherwise it credits the strategy for something that has nothing to do with the idea being tested.",
+  "worked_example": "In the high-volatility segment, random six-day holds in the same shares returned 0.36%. The strategy returned 0.94%. The difference, 0.58%, is what the timing actually contributed.",
+  "how_to_read_it": "The control is the benchmark that matters. A strategy beating zero is unimpressive; a strategy beating its own control is interesting.",
+  "common_mistakes": "Comparing against the wrong control. Volatile shares move more in both directions, so a volatile-share strategy will look impressive against a calm-market benchmark while adding nothing.",
+  "related_slugs": [
+   "excess_return",
+   "backtest",
+   "realised_volatility"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Benchmark",
+    "url": "https://www.investopedia.com/search?q=benchmark",
+    "source_type": "reference"
+   },
+   {
+    "label": "Wikipedia: Alpha (finance)",
+    "url": "https://en.wikipedia.org/wiki/Alpha_(finance)",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "survivorship_bias",
+  "term": "Survivorship bias",
+  "aliases": [
+   "survivorship",
+   "survivor bias"
+  ],
+  "short_definition": "Testing a strategy only on the companies that are still around, which quietly removes every failure.",
+  "full_explanation": "Prism's universe is today's S&P 500. Companies that went bankrupt, were bought, or fell out of the index are not in it.\n\nSo every backtest is run on a list of known survivors. The strategy never gets the chance to lose money on the ones that disappeared, which makes every result better than it should be by an amount nobody can measure without the historical membership lists.",
+  "worked_example": "A strategy tested on today's index over 2010–2026 never buys Lehman Brothers, because Lehman is not in today's index. In 2008 you would have had no way of knowing that.",
+  "how_to_read_it": "Treat every backtest result as an overstatement. The problem is worst in the riskiest slices — high-volatility companies are exactly the ones most likely to have gone bust.",
+  "common_mistakes": "Assuming it is a small effect. On volatile companies over long periods it can be the entire result.",
+  "related_slugs": [
+   "backtest",
+   "realised_volatility",
+   "lookahead_bias"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Survivorship bias",
+    "url": "https://en.wikipedia.org/wiki/Survivorship_bias",
+    "source_type": "reference"
+   },
+   {
+    "label": "Investopedia: Survivorship bias",
+    "url": "https://www.investopedia.com/search?q=survivorship+bias",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "lookahead_bias",
+  "term": "Lookahead bias",
+  "aliases": [
+   "lookahead",
+   "look-ahead bias",
+   "hindsight in a test"
+  ],
+  "short_definition": "Accidentally using information in a test that nobody had at the time.",
+  "full_explanation": "The commonest way to make a worthless backtest look brilliant. If your test knows a company's results before they were published, or knows the exact date it would report, it is trading on knowledge from the future.\n\nPrism's pre-earnings test reconstructs the expected report date from the company's past reporting pattern, never the date that actually happened.",
+  "worked_example": "If a test assumes you knew on 1 April that a company would report on 24 June, but that date was only announced in May, the test is fiction.",
+  "how_to_read_it": "Any historical test needs to state how it avoided this. If it does not mention the problem at all, assume it has it.",
+  "common_mistakes": "Using a data feed that overwrites figures when companies restate them. Your test then sees corrected numbers that were not available for years afterwards.",
+  "related_slugs": [
+   "point_in_time",
+   "backtest",
+   "survivorship_bias"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Look-ahead bias",
+    "url": "https://www.investopedia.com/search?q=look-ahead+bias",
+    "source_type": "reference"
+   },
+   {
+    "label": "Wikipedia: Backtesting",
+    "url": "https://en.wikipedia.org/wiki/Backtesting",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "bootstrap",
+  "term": "Bootstrap",
+  "aliases": [
+   "bootstrapping",
+   "resampling",
+   "bootstrap band",
+   "90% band"
+  ],
+  "short_definition": "A way of asking 'could this result just be luck?' by reshuffling the data thousands of times.",
+  "full_explanation": "Take the trades you actually got, draw a new set of the same size at random from them, allowing repeats, and work out the average. Do that a thousand times and you get a range of averages you might plausibly have seen.\n\nIf zero falls inside that range, the result is consistent with the strategy doing nothing at all.",
+  "worked_example": "A thousand reshuffles of the pre-earnings trades put the average between +0.20% and +0.28%. Zero is not in that range, so the return is unlikely to be pure chance — though that says nothing about whether it beat the control.",
+  "how_to_read_it": "If the range includes zero, treat the result as noise. If it excludes zero, the result is probably real but may still be too small to be worth acting on.",
+  "common_mistakes": "Thinking a range that excludes zero proves the strategy works. It proves the number is not random; it does not prove the number is useful, or that it will persist.",
+  "related_slugs": [
+   "backtest",
+   "multiple_comparisons",
+   "excess_return"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Bootstrapping (statistics)",
+    "url": "https://en.wikipedia.org/wiki/Bootstrapping_(statistics)",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "multiple_comparisons",
+  "term": "Multiple comparisons",
+  "aliases": [
+   "multiple testing",
+   "multiple comparison problem",
+   "data mining",
+   "p-hacking"
+  ],
+  "short_definition": "If you test enough ideas, some will look brilliant purely by chance.",
+  "full_explanation": "Test twenty strategies against a threshold that a worthless strategy passes one time in twenty, and on average one worthless strategy passes.\n\nThe fix is to demand more evidence the more things you tested, and to report how many you tried. A result presented without that count is not interpretable.",
+  "worked_example": "Prism ran 32 segment tests. About 1.6 would look convincing by chance alone; 9 did. After correcting for the number of tests, 4 survived, and only 1 survived the strictest correction.",
+  "how_to_read_it": "Always look for the number of things tested. One good result out of thirty is roughly what you would expect from nothing.",
+  "common_mistakes": "Running many variations, reporting the best, and describing it as though it were the only one tried. This is the single most common way backtests mislead.",
+  "related_slugs": [
+   "backtest",
+   "bootstrap",
+   "statistical_significance"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Multiple comparisons problem",
+    "url": "https://en.wikipedia.org/wiki/Multiple_comparisons_problem",
+    "source_type": "reference"
+   },
+   {
+    "label": "Wikipedia: False discovery rate",
+    "url": "https://en.wikipedia.org/wiki/False_discovery_rate",
+    "source_type": "reference"
+   },
+   {
+    "label": "Wikipedia: Data dredging",
+    "url": "https://en.wikipedia.org/wiki/Data_dredging",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "statistical_significance",
+  "term": "Statistical significance",
+  "aliases": [
+   "significant",
+   "significance",
+   "p-value"
+  ],
+  "short_definition": "A rough measure of how easily a result could have happened by chance.",
+  "full_explanation": "Conventionally, a result is called significant if something that boring would produce it less than one time in twenty.\n\nIt is a weak standard, widely misused. It says nothing about whether a result is large, useful, or repeatable — only that it is unlikely to be pure noise, under assumptions that are often wrong.",
+  "worked_example": "A segment result described as significant at the strictest level here means: if the strategy were worthless, you would see something this good less than once in a thousand tries.",
+  "how_to_read_it": "Significant does not mean important. A tiny effect measured across thirty thousand trades can be highly significant and completely untradeable.",
+  "common_mistakes": "Treating the threshold as a pass mark. Significance is a property of the evidence, not a property of the idea, and it degrades badly when many things are tested.",
+  "related_slugs": [
+   "multiple_comparisons",
+   "bootstrap",
+   "backtest"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Statistical significance",
+    "url": "https://en.wikipedia.org/wiki/Statistical_significance",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "expectancy",
+  "term": "Expectancy",
+  "aliases": [
+   "expected value per trade"
+  ],
+  "short_definition": "The average amount you would expect to make per trade, taking wins and losses together.",
+  "full_explanation": "Expectancy combines how often you win with how much you win and lose. A strategy that wins only a third of the time can still be strongly profitable if the wins are much larger than the losses.\n\nIn Prism it is expressed in R — as a multiple of the amount risked on each trade.",
+  "worked_example": "Win 40% of the time making three times your risk, lose 60% of the time losing one times your risk: expectancy is (0.4 × 3) − (0.6 × 1) = 0.6R. You make 0.6 times your risk per trade on average.",
+  "how_to_read_it": "Positive means profitable on average over many trades. It says nothing about any individual trade, and nothing about how bumpy the ride is.",
+  "common_mistakes": "Chasing win rate instead. A strategy winning ninety per cent of the time can still lose money if the losses are large enough.",
+  "related_slugs": [
+   "r_multiple",
+   "win_rate",
+   "max_drawdown"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Expected value",
+    "url": "https://www.investopedia.com/search?q=expected+value",
+    "source_type": "reference"
+   },
+   {
+    "label": "Wikipedia: Expected value",
+    "url": "https://en.wikipedia.org/wiki/Expected_value",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "r_multiple",
+  "term": "R-multiple",
+  "aliases": [
+   "R",
+   "R multiple",
+   "in R"
+  ],
+  "short_definition": "A way of measuring gains and losses as multiples of what you risked, rather than in pounds.",
+  "full_explanation": "One R is the amount you would lose if the trade went against you to your planned exit. A trade that makes three times that is a 3R win.\n\nIt makes trades comparable regardless of position size, which is what lets you compare a small speculative position with a large core one.",
+  "worked_example": "Buy at 100p with a planned exit at 90p: you are risking 10p, so 1R is 10p. If you sell at 130p you made 30p, which is 3R.",
+  "how_to_read_it": "Expressing results in R strips out position sizing, so it measures the decision rather than the bet size.",
+  "common_mistakes": "Changing your planned exit after entering. It rewrites what 1R meant and makes every subsequent number incomparable.",
+  "related_slugs": [
+   "expectancy",
+   "win_rate"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Risk/reward ratio",
+    "url": "https://www.investopedia.com/search?q=risk+reward+ratio",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "win_rate",
+  "term": "Win rate",
+  "aliases": [
+   "hit rate",
+   "percentage of winners"
+  ],
+  "short_definition": "The share of trades that made money.",
+  "full_explanation": "Straightforward to compute and easy to over-weight. A win rate on its own tells you nothing about profitability, because it says nothing about the size of the wins relative to the losses.",
+  "worked_example": "Of 31,654 pre-earnings trades, 53.3% made money — barely better than a coin toss.",
+  "how_to_read_it": "Read it beside expectancy. A win rate near fifty per cent with a positive expectancy means the wins are bigger than the losses.",
+  "common_mistakes": "Optimising for it. Strategies with very high win rates usually take small gains repeatedly while occasionally taking a catastrophic loss.",
+  "related_slugs": [
+   "expectancy",
+   "r_multiple"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Win/loss ratio",
+    "url": "https://www.investopedia.com/search?q=win+loss+ratio",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "max_drawdown",
+  "term": "Maximum drawdown",
+  "aliases": [
+   "drawdown",
+   "max drawdown"
+  ],
+  "short_definition": "The worst peak-to-trough fall — how much you would have been down at the worst moment.",
+  "full_explanation": "Measured from the highest point reached to the lowest point after it. It is the number that decides whether a strategy is psychologically survivable, regardless of how good the eventual return is.\n\nA strategy returning ten per cent a year with a sixty per cent drawdown is one most people abandon at the bottom.",
+  "worked_example": "A portfolio rising from £100k to £150k, falling to £90k, then recovering, had a maximum drawdown of forty per cent — from the £150k peak down to £90k.",
+  "how_to_read_it": "Larger is worse. Compare it against your own tolerance, not against other strategies.",
+  "common_mistakes": "In Prism's backtest this figure is a rough sketch computed by stringing trade returns together, not a real portfolio simulation — it does not account for holding several positions at once. It is labelled as such everywhere it appears.",
+  "related_slugs": [
+   "expectancy",
+   "backtest"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Drawdown (economics)",
+    "url": "https://en.wikipedia.org/wiki/Drawdown_(economics)",
+    "source_type": "reference"
+   },
+   {
+    "label": "Investopedia: Maximum drawdown",
+    "url": "https://www.investopedia.com/search?q=maximum+drawdown",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "realised_volatility",
+  "term": "Realised volatility",
+  "aliases": [
+   "realized volatility",
+   "volatility",
+   "vol",
+   "historical volatility"
+  ],
+  "short_definition": "How much a share price has actually been jumping around lately.",
+  "full_explanation": "Calculated from daily price moves over a recent window and scaled to an annual figure. High volatility means large daily swings in both directions.\n\nIt describes the past. It is not a forecast, though volatility does tend to cluster — turbulent periods follow turbulent periods.",
+  "worked_example": "A share whose price typically moves 2.3% a day has an annualised volatility of about 36%. In Prism's backtest, that was the cutoff for the most volatile fifth of the market.",
+  "how_to_read_it": "Higher means a bumpier ride, not a worse company. Volatile shares also tend to have wider trading costs, which eats into any strategy that trades them often.",
+  "common_mistakes": "Confusing volatility with risk. They overlap but are not the same: a stable business can have a volatile share price, and a quietly deteriorating one can have a calm price right up until it does not.",
+  "related_slugs": [
+   "quintile",
+   "bid_ask_spread",
+   "drift_control"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Volatility (finance)",
+    "url": "https://en.wikipedia.org/wiki/Volatility_(finance)",
+    "source_type": "reference"
+   },
+   {
+    "label": "Investopedia: Volatility",
+    "url": "https://www.investopedia.com/search?q=volatility",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "quintile",
+  "term": "Quintile",
+  "aliases": [
+   "quintiles",
+   "fifth"
+  ],
+  "short_definition": "One fifth of a group, after sorting it — a way of splitting companies into five equal-sized buckets.",
+  "full_explanation": "Sort every company by some measure, then cut the list into five equal groups. The top quintile is the highest fifth, the bottom quintile the lowest.\n\nUseful because it shows whether an effect strengthens steadily as you move across the buckets, which is much stronger evidence than a single group looking good.",
+  "worked_example": "Sorting 31,654 trades by volatility into five buckets of about 6,250 each, the excess return went −0.10%, −0.06%, 0.00%, +0.16%, +0.64% from calmest to most volatile.",
+  "how_to_read_it": "Look at the pattern across all five, not just the best one. A steady progression suggests something real; one bucket standing out alone usually does not.",
+  "common_mistakes": "Reading only the top bucket. If the other four are random, the top one probably is too.",
+  "related_slugs": [
+   "realised_volatility",
+   "multiple_comparisons"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Quintile",
+    "url": "https://www.investopedia.com/search?q=quintile",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "bid_ask_spread",
+  "term": "Spread",
+  "aliases": [
+   "bid-ask spread",
+   "bid ask spread",
+   "trading spread"
+  ],
+  "short_definition": "The gap between the price you can buy at and the price you can sell at — a cost you pay on every trade.",
+  "full_explanation": "Market makers quote a slightly higher price to buyers than to sellers. That gap is a cost you pay immediately on entering and again on leaving, whether or not the trade works.\n\nMeasured in basis points: one hundredth of one per cent.",
+  "worked_example": "A share quoted 99.9p to sell and 100.1p to buy has a spread of about 20 basis points, or 0.2%. Buying and selling costs you roughly 0.4% before the price has moved at all.",
+  "how_to_read_it": "Wider spreads make frequent trading much harder to justify. Prism's backtests assume 10 basis points, which is optimistic for small or volatile companies.",
+  "common_mistakes": "Ignoring it. The high-volatility strategy that looked strongest stops making money at a spread of about 57 basis points — and volatile shares are exactly the ones with wide spreads.",
+  "related_slugs": [
+   "basis_point",
+   "realised_volatility",
+   "backtest"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Bid-ask spread",
+    "url": "https://en.wikipedia.org/wiki/Bid%E2%80%93ask_spread",
+    "source_type": "reference"
+   },
+   {
+    "label": "Investopedia: Bid-ask spread",
+    "url": "https://www.investopedia.com/search?q=bid+ask+spread",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "basis_point",
+  "term": "Basis point",
+  "aliases": [
+   "basis points",
+   "bps",
+   "bp"
+  ],
+  "short_definition": "One hundredth of one per cent — the unit used for small costs and differences.",
+  "full_explanation": "A hundred basis points make one per cent. Used because saying 'the spread went from 0.10% to 0.15%' is clumsier than 'from 10 to 15 basis points'.",
+  "worked_example": "A cost of 15 basis points on a £10,000 position is £15.",
+  "how_to_read_it": "When a strategy's edge is quoted in basis points, work out what it is worth on a position you would actually take. Six basis points on £10,000 is £6 — before costs.",
+  "common_mistakes": "Losing track of the scale. A difference of 30 basis points sounds trivial and is larger than the entire edge of most strategies.",
+  "related_slugs": [
+   "bid_ask_spread",
+   "excess_return"
+  ],
+  "external_links": [
+   {
+    "label": "Investopedia: Basis point",
+    "url": "https://www.investopedia.com/search?q=basis+point",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ },
+ {
+  "slug": "median",
+  "term": "Median",
+  "aliases": [
+   "middle value"
+  ],
+  "short_definition": "The middle value in a list — half are above it, half below.",
+  "full_explanation": "Different from the average, and usually more informative when a few extreme values would otherwise dominate.\n\nPrism reports both for backtest results, because a large gap between them means the average is being pulled by a handful of extreme trades.",
+  "worked_example": "For trade returns of −5%, 0%, 1%, 2%, and 50%, the average is 9.6% but the median is 1%. The median describes the typical trade; the average describes one outlier.",
+  "how_to_read_it": "If the mean and median are close, the average is a fair summary. If they are far apart, the average is being driven by a few extremes and should not be relied on.",
+  "common_mistakes": "Quoting an average return without checking the median. A single spectacular trade can make a mediocre strategy look excellent.",
+  "related_slugs": [
+   "sector_median",
+   "expectancy"
+  ],
+  "external_links": [
+   {
+    "label": "Wikipedia: Median",
+    "url": "https://en.wikipedia.org/wiki/Median",
+    "source_type": "reference"
+   }
+  ],
+  "category": "backtest"
+ }
+]

@@ -631,6 +631,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/glossary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Terms */
+        get: operations["list_terms_glossary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/glossary/{slug}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Note */
+        put: operations["put_note_glossary__slug__note_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/glossary/reseed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reseed
+         * @description Re-apply the seed content. Notes are in another table and survive.
+         */
+        post: operations["reseed_glossary_reseed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/backtest/pre-earnings": {
         parameters: {
             query?: never;
@@ -1206,6 +1260,15 @@ export interface components {
             /** Actor */
             actor: string;
         };
+        /** ExternalLink */
+        ExternalLink: {
+            /** Label */
+            label: string;
+            /** Url */
+            url: string;
+            /** Source Type */
+            source_type: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1351,6 +1414,11 @@ export interface components {
             unavailable_reason?: string | null;
             /** Suggested Alternative */
             suggested_alternative?: string | null;
+        };
+        /** NoteIn */
+        NoteIn: {
+            /** Note */
+            note: string;
         };
         /** PeerRow */
         PeerRow: {
@@ -1614,6 +1682,35 @@ export interface components {
              * @default 5
              */
             commission_bps: number;
+        };
+        /** TermOut */
+        TermOut: {
+            /** Slug */
+            slug: string;
+            /** Term */
+            term: string;
+            /** Aliases */
+            aliases: string[];
+            /** Short Definition */
+            short_definition: string;
+            /** Full Explanation */
+            full_explanation: string;
+            /** Worked Example */
+            worked_example: string | null;
+            /** How To Read It */
+            how_to_read_it: string | null;
+            /** Common Mistakes */
+            common_mistakes: string | null;
+            /** Related Slugs */
+            related_slugs: string[];
+            /** External Links */
+            external_links: components["schemas"]["ExternalLink"][];
+            /** Category */
+            category: string;
+            /** User Note */
+            user_note?: string | null;
+            /** User Note Updated At */
+            user_note_updated_at?: string | null;
         };
         /** TradeIn */
         TradeIn: {
@@ -3069,6 +3166,85 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_terms_glossary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermOut"][];
+                };
+            };
+        };
+    };
+    put_note_glossary__slug__note_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reseed_glossary_reseed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };

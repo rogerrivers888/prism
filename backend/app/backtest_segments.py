@@ -484,7 +484,7 @@ async def run_segmented(
     survives_fdr = benjamini_hochberg(p_values) if p_values else []
     bonferroni_alpha = 0.05 / len(p_values) if p_values else 0.05
 
-    rows = []
+    rows: list[dict] = []
     for result, fdr in zip(results, survives_fdr):
         rows.append(
             {
@@ -498,7 +498,7 @@ async def run_segmented(
     positive = [r for r in rows if r["excess_pct"] > 0 and not r["underpowered"]]
     best = max(positive, key=lambda r: r["excess_pct"]) if positive else None
 
-    return {
+    payload = {
         "params": pooled["params"],
         "pooled": {
             "trades": pooled["overall"]["trades"],
@@ -526,6 +526,8 @@ async def run_segmented(
         "best_positive_segment": best,
         "underpowered_segments": [r["segment"] for r in rows if r["underpowered"]],
     }
+    payload["plain_verdict"] = plain_verdict(payload)
+    return payload
 
 
 async def report_dates_by_ticker(
@@ -637,3 +639,107 @@ def matched_pool(
         if draws:
             pool[ticker] = draws
     return pool
+
+
+# Quintile labels read as "Q5" in a table, which is fine there and useless in
+# a sentence. These are the sentence forms.
+QUINTILE_WORDS = {
+    "realised_vol_quintile": ("calmest", "most volatile", "by how much their share price jumps around"),
+    "market_cap_quintile": ("smallest", "largest", "by company size"),
+}
+
+
+def friendly_segment(family: str, segment: str) -> str:
+    """A segment name that can be dropped into a sentence."""
+    if family in QUINTILE_WORDS and segment.startswith("Q"):
+        low, high, _ = QUINTILE_WORDS[family]
+        rank = segment[1:]
+        if rank == "1":
+            return f"the {low} fifth of companies"
+        if rank == "5":
+            return f"the {high} fifth of companies"
+        return f"the {['', 'second', 'middle', 'fourth'][int(rank) - 1]} fifth of companies"
+    return segment.replace("_", " ")
+
+
+def and_list(names: list[str]) -> str:
+    words = [n.replace("_", " ") for n in names]
+    if len(words) == 1:
+        return words[0]
+    return ", ".join(words[:-1]) + " and " + words[-1]
+
+
+def plain_verdict(result: dict) -> dict:
+    """Plain-English summary of a segmented run.
+
+    The thing a reader most needs to be told here is that thirty-odd tests
+    were run, because a table of segments invites reading the best row as if
+    it were the only one.
+    """
+    from app.backtest import ILLUSTRATIVE_POSITION
+
+    rows = result.get("segments") or []
+    if not rows:
+        return {
+            "headline": "No segment had enough trades to say anything about.",
+            "body": "",
+            "worth_acting_on": False,
+        }
+
+    correction = result.get("correction", {})
+    tests = result.get("segment_tests_run", len(rows))
+    expected = correction.get("expected_false_positives_uncorrected", 0)
+    uncorrected = correction.get("significant_uncorrected", 0)
+    survived = correction.get("significant_bonferroni", 0)
+
+    strong = [r for r in rows if r.get("significant_bonferroni") and not r["underpowered"]]
+    best = max(strong, key=lambda r: r["excess_pct"]) if strong else None
+
+    pounds = lambda pct: f"£{pct / 100 * ILLUSTRATIVE_POSITION:,.0f}"
+
+    if best is None:
+        headline = (
+            f"Nothing here is worth acting on. The trades were sliced {tests} different "
+            f"ways, and once you allow for the fact that trying {tests} things will throw "
+            f"up a few good-looking results by chance, none of them hold up."
+        )
+        worth = False
+    else:
+        name = friendly_segment(best["family"], best["segment"])
+        sorted_by = QUINTILE_WORDS.get(best["family"], (None, None, f"by {best['family'].replace('_', ' ')}"))[2]
+        headline = (
+            f"One slice stands out and survives the checks: {name}, sorted {sorted_by}. "
+            f"Within it, the earnings timing added about {best['excess_pct']:+.2f}% per "
+            f"trade over simply owning the same shares for the same number of days — "
+            f"roughly {pounds(best['excess_pct'])} on a {pounds(100)} position, across "
+            f"{best['trades']:,} trades."
+        )
+        worth = True
+
+    parts = [
+        f"The trades were split {tests} ways. If none of the slices meant anything, about "
+        f"{expected:.0f} would still look convincing purely by luck; {uncorrected} did. "
+        f"After demanding stronger evidence to account for how many were tried, "
+        f"{survived} survived."
+    ]
+
+    isolated = [name for name, v in (result.get("neighbour_agreement") or {}).items() if v.get("isolated")]
+    if isolated:
+        parts.append(
+            f"{and_list(isolated).capitalize()} looked good but no similar industry did, which is "
+            f"usually what a fluke looks like rather than a real pattern."
+        )
+
+    thin = result.get("underpowered_segments") or []
+    if thin:
+        parts.append(
+            f"{len(thin)} slices had too few trades to conclude anything from, however "
+            f"good the number looked, and are greyed out."
+        )
+
+    parts.append(
+        "As everywhere, this uses the companies in the index today, so the ones that "
+        "failed along the way are missing and every figure flatters the result."
+    )
+
+    return {"headline": headline, "body": " ".join(parts), "worth_acting_on": worth}

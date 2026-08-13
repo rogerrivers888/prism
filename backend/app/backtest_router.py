@@ -16,7 +16,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.backtest import Costs, public, run_pre_earnings
+from app.backtest import Costs, public, run_pre_earnings, with_verdict
 from app.backtest_segments import run_segmented
 from app.db import Base, get_session
 
@@ -68,7 +68,7 @@ async def post_pre_earnings(body: PreEarningsRequest, session: SessionDep) -> di
         ),
         variants_tested=body.variants_tested,
     )
-    result = public(result)
+    result = public(with_verdict(result))
     if body.persist:
         session.add(
             BacktestRun(
