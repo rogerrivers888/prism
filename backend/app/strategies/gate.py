@@ -166,16 +166,28 @@ def drift_control(
 
     Matched on the calendar window each real trade occupied, so the control
     cannot be flattered or punished by being in the market at a different time.
+
+    Eligibility must mirror the strategy's exactly. With membership data the
+    strategy selects from the index as of each date, corpses included — a
+    control still drawn from today's survivors would be a portfolio of known
+    winners, and every strategy would "fail to beat" a benchmark it was never
+    allowed to hold. Symmetry here IS the honesty of the comparison.
     """
     if not result.round_trips:
         return {"samples": 0}
 
+    def sector_ok(ticker: str) -> bool:
+        sector = service.securities[ticker].sector
+        if rules.universe.sectors and sector not in rules.universe.sectors:
+            return False
+        if rules.universe.exclude_sectors and sector in rules.universe.exclude_sectors:
+            return False
+        return True
+
     eligible = [
         ticker for ticker, security in service.securities.items()
-        if security.is_active
-        and (not rules.universe.sectors or security.sector in rules.universe.sectors)
-        and (not rules.universe.exclude_sectors
-             or security.sector not in rules.universe.exclude_sectors)
+        if sector_ok(ticker)
+        and (service.membership is not None or security.is_active)
         and len(service.bars.get(ticker, [])) > 260
     ]
     if not eligible:
@@ -190,6 +202,9 @@ def drift_control(
             entry_index = service._bar_index(ticker, trip.entry_date)
             exit_index = service._bar_index(ticker, trip.exit_date)
             if entry_index < 0 or exit_index <= entry_index:
+                continue
+            # Same membership rule as the strategy, on the same date.
+            if not service.is_member(ticker, trip.entry_date):
                 continue
             entry_price = bars[entry_index].adjusted_close
             if entry_price <= 0:
