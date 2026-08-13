@@ -205,6 +205,40 @@ async def run(session, provider: MarketDataProvider, run_date: date) -> runs.Run
     await session.commit()
     tally.notes.append(f"projection applied {applied} events")
 
+    # Strategy machine: fill yesterday's paper orders at today's open, signal
+    # tomorrow's from tonight's data. Runs after scoring so tonight's lens
+    # scores exist for tonight's signals. A failure here must not unwind the
+    # scores already committed above, so it is fenced and reported.
+    try:
+        from app.strategies.features import FeatureService
+        from app.strategies.paper import run_paper_day
+        from app.strategies.registry import Strategy, catch_up as strategies_catch_up
+        from app.strategies.rules import features_used, parse_rules
+        from sqlalchemy import select as sa_select
+
+        await strategies_catch_up(session)
+        active = list(
+            (await session.execute(sa_select(Strategy).where(Strategy.status == "active"))).scalars()
+        )
+        if active:
+            needed: set[str] = set()
+            for strategy in active:
+                rules = parse_rules(strategy.rules)
+                needed |= features_used(rules)
+                if rules.universe.min_market_cap or rules.universe.max_market_cap:
+                    needed.add("price:market_cap")
+            # Two years of window so 12-month features exist on day one.
+            service = await FeatureService.build(
+                session, run_date.replace(year=run_date.year - 2), run_date, needed
+            )
+            paper = await run_paper_day(session, service, run_date)
+            await session.commit()
+            tally.notes.append(f"paper: {paper.as_dict()}")
+    except Exception as exc:  # noqa: BLE001
+        await session.rollback()
+        tally.notes.append(f"paper run FAILED: {type(exc).__name__}: {exc}")
+        logger.exception("paper run failed")
+
     return tally
 
 
