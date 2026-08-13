@@ -133,7 +133,14 @@ def evaluate(
     # ---- universe filter ------------------------------------------------
     candidates: list[str] = []
     for ticker, security in service.securities.items():
-        if not security.is_active:
+        # With membership data, membership on THIS date governs eligibility -
+        # a company that later delisted was alive and buyable at the time, and
+        # is_active (which describes today) must not veto it. Without
+        # membership data, is_active is the only filter there is.
+        if service.membership is not None:
+            if not service.is_member(ticker, as_of):
+                continue
+        elif not security.is_active:
             continue
         if rules.universe.sectors and security.sector not in rules.universe.sectors:
             continue

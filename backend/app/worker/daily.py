@@ -122,6 +122,20 @@ async def run(session, provider: MarketDataProvider, run_date: date) -> runs.Run
     tally = runs.RunTally()
     budget = CallBudget(session, provider.name, settings.eodhd_daily_call_budget)
 
+    # Membership first: one call, and departures must keep arriving nightly or
+    # the corrected universe silently reverts to a survivor list at the edge.
+    try:
+        from app.ingest import constituents as constituents_module
+
+        await budget.spend(1)
+        membership_report = await constituents_module.sync_index(session, provider)
+        await session.commit()
+        tally.notes.append(f"membership: {membership_report}")
+    except Exception as exc:  # noqa: BLE001 - membership staleness must not stop prices
+        await session.rollback()
+        tally.notes.append(f"membership sync FAILED: {type(exc).__name__}: {exc}")
+        logger.exception("membership sync failed")
+
     securities = list(
         (await session.execute(select(Security).order_by(Security.ticker))).scalars()
     )
@@ -228,8 +242,12 @@ async def run(session, provider: MarketDataProvider, run_date: date) -> runs.Run
                 if rules.universe.min_market_cap or rules.universe.max_market_cap:
                     needed.add("price:market_cap")
             # Two years of window so 12-month features exist on day one.
+            # Membership keeps live paper trading in the same universe the
+            # backtests ran on: index members as of today, not everything the
+            # database happens to hold.
             service = await FeatureService.build(
-                session, run_date.replace(year=run_date.year - 2), run_date, needed
+                session, run_date.replace(year=run_date.year - 2), run_date, needed,
+                membership_index="GSPC.INDX",
             )
             paper = await run_paper_day(session, service, run_date)
             await session.commit()

@@ -210,6 +210,13 @@ class UnmappedSector(Exception):
 
 def map_sector(provider_sector: str | None, provider_industry: str | None) -> str:
     """Resolve a Prism sector, preferring the finer Industry string."""
+    if provider_sector == "Other" and provider_industry == "Other":
+        # Delisted companies frequently lose their classification upstream and
+        # come back as Other/Other. "unclassified" is the honest answer: these
+        # names never match a sector-restricted strategy and never join a peer
+        # group, but their prices and fundamentals still repair the
+        # survivorship hole. Not a guess — a declared absence.
+        return "unclassified"
     if provider_industry and provider_industry in INDUSTRY_TO_SECTOR:
         return INDUSTRY_TO_SECTOR[provider_industry]
     if provider_sector and provider_sector in SECTOR_TO_SECTOR:

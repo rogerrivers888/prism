@@ -68,6 +68,11 @@ class FeatureService:
     # sector -> ascending [(as_of, cycle_median)]
     sector_cycle: dict[str, list[tuple[date, float]]]
     calendar: list[date]
+    # ticker -> membership spells [(joined, left|None)]. When set, the engine
+    # selects from the index AS IT WAS on each date: departed companies are
+    # eligible while they were members and invisible after they left. None
+    # means no membership data - the old survivor-only behaviour.
+    membership: dict[str, list[tuple[date, date | None]]] | None = None
     _cache: dict = field(default_factory=dict)
 
     # ------------------------------------------------------------- loading
@@ -80,6 +85,7 @@ class FeatureService:
         end: date,
         needed: set[str],
         tickers: list[str] | None = None,
+        membership_index: str | None = None,
     ) -> "FeatureService":
         namespaces = {feature.split(":", 1)[0] for feature in needed}
         want_fundamentals = bool(
@@ -202,11 +208,28 @@ class FeatureService:
         calendar = sorted({bar.date for series in bars.values() for bar in series
                            if start <= bar.date <= end})
 
+        membership = None
+        if membership_index is not None:
+            from app.ingest.constituents import membership_spells
+
+            membership = await membership_spells(session, membership_index)
+
         return cls(
             start=start, end=end, securities=securities, bars=dict(bars),
             fundamentals=fundamentals, lens_scores=dict(lens_scores),
             lens_scores_abs=dict(lens_abs), dispersion=dict(dispersion),
             sector_cycle=dict(sector_cycle), calendar=calendar,
+            membership=membership,
+        )
+
+    def is_member(self, ticker: str, as_of: date) -> bool:
+        """Was this ticker in the index on this date? True for everything when
+        no membership data is loaded."""
+        if self.membership is None:
+            return True
+        return any(
+            joined <= as_of and (left is None or left > as_of)
+            for joined, left in self.membership.get(ticker, [])
         )
 
     # ------------------------------------------------------------- slicing

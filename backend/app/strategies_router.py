@@ -97,6 +97,32 @@ async def _paper_stats(session: AsyncSession, strategy_id: uuid.UUID) -> dict:
     return out
 
 
+async def _universe_warning(session: AsyncSession) -> str:
+    """Survivorship note matching the state of the data, not a stale claim."""
+    latest = (
+        await session.execute(
+            select(registry.StrategyBacktest).order_by(desc(registry.StrategyBacktest.id)).limit(1)
+        )
+    ).scalar_one_or_none()
+    corrected = bool(latest and latest.results.get("universe") == "corrected")
+    if corrected:
+        return (
+            "Backtests select from the index membership as it stood on each "
+            "date, including companies that later went bankrupt or were taken "
+            "over. Residual survivorship remains at the edges: membership "
+            "records are thin before about 2012, and a few departed companies "
+            "have no retrievable data. Still compare each strategy against its "
+            "own control rather than trusting absolute returns."
+        )
+    return (
+        "Every backtest here runs on today's index membership. Companies that "
+        "went bankrupt or were taken over are absent, so the absolute returns "
+        "are far better than reality — most extremely for the momentum "
+        "strategies, which buy whatever rose furthest. Compare each strategy "
+        "against its own control, never against another's headline return."
+    )
+
+
 async def _latest_backtest(session: AsyncSession, strategy_id: uuid.UUID):
     return (
         await session.execute(
@@ -194,15 +220,9 @@ async def leaderboard(session: SessionDep) -> dict:
             "ranking by the last thirty days promotes whatever just got lucky."
         ),
         "cohort_deflation": cohort,
-        # Survivorship applies to every row, so it is stated once and
-        # prominently rather than twelve times in small print.
-        "universe_warning": (
-            "Every backtest here runs on today's index membership. Companies that "
-            "went bankrupt or were taken over are absent, so the absolute returns "
-            "are far better than reality — most extremely for the momentum "
-            "strategies, which buy whatever rose furthest. Compare each strategy "
-            "against its own control, never against another's headline return."
-        ),
+        # Stated once, prominently. Which message depends on what the latest
+        # backtests actually ran against.
+        "universe_warning": await _universe_warning(session),
     }
 
 

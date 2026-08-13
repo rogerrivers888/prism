@@ -305,28 +305,43 @@ def deflate(
 # ---------------------------------------------------------------- the gate
 
 
-def caveats(results: dict, rules: StrategyRules) -> list[dict]:
+def caveats(results: dict, rules: StrategyRules, corrected_universe: bool = False) -> list[dict]:
     """What is wrong with these numbers, attached to them.
 
-    The survivorship note leads and is unconditional. Prism's universe is
-    today's index membership, so the backtest picks from a list of companies
-    selected precisely BECAUSE they survived. For a momentum strategy that is
-    close to fatal: it loads up on whatever rose most, and every name that
-    rose most and then collapsed is missing from the list entirely.
+    The survivorship note leads either way — what changes is whether it
+    describes a repaired problem or an open one.
     """
-    out = [{
-        "severity": "high",
-        "title": "The absolute returns here are not real",
-        "body": (
-            "The universe is the index as it stands today. Companies that went "
-            "bankrupt, were taken over, or fell out of the index are absent, so "
-            "the backtest is choosing from a list of known survivors. This "
-            "flatters every strategy, and it flatters momentum strategies most "
-            "of all, because they buy whatever has risen furthest and the names "
-            "that rose furthest before collapsing are the ones missing. Read the "
-            "excess over the control, never the headline return."
-        ),
-    }]
+    if corrected_universe:
+        out = [{
+            "severity": "medium",
+            "title": "Universe corrected for survivorship within the data window",
+            "body": (
+                "This backtest selects from the index membership as it stood on "
+                "each date, including companies that later went bankrupt, were "
+                "taken over, or dropped out — their data has been recovered and "
+                "they are eligible while they were members. Residual gaps "
+                "remain: membership records are thin before about 2012, a few "
+                "departed companies have no retrievable data, and companies "
+                "whose join dates were unrecorded are assumed to be members "
+                "from the window start. Better than the survivor-only version; "
+                "not perfect."
+            ),
+        }]
+    else:
+        out = [{
+            "severity": "high",
+            "title": "The absolute returns here are not real",
+            "body": (
+                "The universe is the index as it stands today. Companies that "
+                "went bankrupt, were taken over, or fell out of the index are "
+                "absent, so the backtest is choosing from a list of known "
+                "survivors. This flatters every strategy, and it flatters "
+                "momentum strategies most of all, because they buy whatever has "
+                "risen furthest and the names that rose furthest before "
+                "collapsing are the ones missing. Read the excess over the "
+                "control, never the headline return."
+            ),
+        }]
 
     overall = results.get("overall", {})
     mean = overall.get("mean_trade_return_pct")
@@ -424,11 +439,12 @@ async def run_gate(
     end: date,
     costs: CostModel | None = None,
     service: FeatureService | None = None,
+    membership_index: str | None = "GSPC.INDX",
 ) -> dict:
     """Backtest a registered strategy and record the evidence.
 
-    Never promotes. Produces the numbers and a verdict on eligibility; the
-    promotion itself is a human act.
+    Uses the index membership as-of each date when the data exists, so the
+    universe includes companies that later died. Never promotes.
     """
     costs = costs or CostModel()
     strategy = await session.get(Strategy, strategy_id)
@@ -440,7 +456,9 @@ async def run_gate(
         needed = features_used(rules)
         if rules.universe.min_market_cap or rules.universe.max_market_cap:
             needed.add("price:market_cap")
-        service = await FeatureService.build(session, start, end, needed)
+        service = await FeatureService.build(
+            session, start, end, needed, membership_index=membership_index
+        )
 
     result = simulate(service, rules, start, end, costs=costs)
     overall = summarise(result)
@@ -459,10 +477,14 @@ async def run_gate(
     boot = bootstrap_returns(trade_returns) if len(trade_returns) >= 30 else None
     family = await family_of(session, strategy_id)
 
+    corrected = service.membership is not None and len(service.membership) > 0
     results = {
         "strategy_id": str(strategy_id),
         "name": strategy.name,
         "window": {"start": start.isoformat(), "end": end.isoformat()},
+        # Which universe this ran on. "corrected" = membership-as-of-date,
+        # departed companies included; "survivor_only" = today's list.
+        "universe": "corrected" if corrected else "survivor_only",
         "costs": {
             "commission_per_order": costs.commission_per_order,
             "us_large_bps": costs.us_large_bps,
@@ -487,7 +509,7 @@ async def run_gate(
         },
         "deflation": deflate(trade_returns, monthly_values, len(family)),
     }
-    results["caveats"] = caveats(results, rules)
+    results["caveats"] = caveats(results, rules, corrected_universe=corrected)
     outcome = assess(results)
     results["gate"] = {
         "eligible_for_paper": outcome.passed,

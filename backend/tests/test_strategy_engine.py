@@ -167,3 +167,31 @@ def test_monthly_returns_are_monthly_even_when_rebalancing_quarterly():
     assert len(months) == len(set(months))
     # ~170 trading days is roughly eight months, not two quarters.
     assert len(months) >= 5
+
+
+def test_membership_governs_eligibility_when_present():
+    """The survivorship repair: a departed company is eligible while it was a
+    member — even though is_active says it is dead today — and a current
+    member is invisible before it joined."""
+    up = [100 * (1.01 ** i) for i in range(60)]
+    service = make_service({"DEAD": up, "NEWBIE": [p * 0.9 for p in up]})
+    # DEAD is delisted today; NEWBIE joined the index after our test date.
+    service.securities["DEAD"].is_active = False
+    last = service.calendar[-1]
+    service.membership = {
+        "DEAD": [(service.calendar[0], None)],
+        # NEWBIE joins the day after the evaluation date.
+        "NEWBIE": [(last + datetime.timedelta(days=1), None)],
+    }
+
+    decision = evaluate(service, rules_top1_momentum(), last, {})
+    buys = [o.ticker for o in decision.orders if o.side == "buy"]
+    assert buys == ["DEAD"]
+
+
+def test_without_membership_is_active_still_filters():
+    up = [100 * (1.01 ** i) for i in range(60)]
+    service = make_service({"DEAD": up})
+    service.securities["DEAD"].is_active = False
+    decision = evaluate(service, rules_top1_momentum(), service.calendar[-1], {})
+    assert decision.orders == []

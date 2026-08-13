@@ -68,7 +68,12 @@ async def gate_all(session: AsyncSession, start: date, end: date) -> list[dict]:
 
     logger.info("building features for %d strategies, %d distinct features",
                 len(strategies), len(needed))
-    service = await FeatureService.build(session, start, end, needed)
+    service = await FeatureService.build(
+        session, start, end, needed, membership_index="GSPC.INDX"
+    )
+    if service.membership:
+        logger.info("universe corrected: %d tickers carry membership spells",
+                    len(service.membership))
 
     out = []
     for strategy in strategies:

@@ -1394,10 +1394,10 @@
    "survivor bias"
   ],
   "short_definition": "Testing a strategy only on the companies that are still around, which quietly removes every failure.",
-  "full_explanation": "Prism's universe is today's S&P 500. Companies that went bankrupt, were bought, or fell out of the index are not in it.\n\nSo every backtest is run on a list of known survivors. The strategy never gets the chance to lose money on the ones that disappeared, which makes every result better than it should be by an amount nobody can measure without the historical membership lists.",
-  "worked_example": "A strategy tested on today's index over 2010–2026 never buys Lehman Brothers, because Lehman is not in today's index. In 2008 you would have had no way of knowing that.",
+  "full_explanation": "Prism's strategy backtests select from the S&P 500 membership as it stood on each historical date, using a purchased history of joins and departures — so companies that later went bankrupt or were taken over are eligible while they were members, and their recovered price and fundamentals data carries their real outcomes.\n\nThe repair is good but not total. Membership records are thin before about 2012, a few departed companies have no retrievable data at all, and long-tenured members with unrecorded join dates are assumed present from the start of the window. Everything outside the strategy machine — the earnings backtest, for instance — still runs on today's list and remains survivor-only.",
+  "worked_example": "A momentum backtest on today's index turned £100k into millions, because it picked from a list of known winners. On the corrected membership the same strategy also had to hold the companies that later collapsed — the difference between the two runs is the measured size of the bias.",
   "how_to_read_it": "Treat every backtest result as an overstatement. The problem is worst in the riskiest slices — high-volatility companies are exactly the ones most likely to have gone bust.",
-  "common_mistakes": "Assuming it is a small effect. On volatile companies over long periods it can be the entire result.",
+  "common_mistakes": "Assuming it is either fully fixed or a small effect. The correction covers the strategy machine within the constituents window; before ~2012, and everywhere else in the app, results still flatter themselves by an amount that cannot be measured.",
   "related_slugs": [
    "backtest",
    "realised_volatility",

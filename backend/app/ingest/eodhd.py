@@ -183,6 +183,13 @@ class EODHDProvider:
         payload = await self._get(f"/fundamentals/{ticker}")
         return FetchResult(endpoint="fundamentals", payload=payload, calls=1)
 
+    async def fetch_index_constituents(self, index: str) -> FetchResult:
+        """Historical index membership, from the Unicorn Data Services
+        marketplace product. One call returns current components AND the full
+        HistoricalTickerComponents history with join/leave dates."""
+        payload = await self._get(f"/mp/unicornbay/spglobal/comp/{index}")
+        return FetchResult(endpoint="mp_constituents", payload=payload, calls=1)
+
     async def search(self, query: str, limit: int = 8) -> list[dict]:
         """Resolve a company name or partial symbol to real tickers.
 

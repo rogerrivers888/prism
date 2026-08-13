@@ -73,10 +73,11 @@ export const PRINCIPLES: Principle[] = [
         ],
       },
       {
-        heading: "The universe is a list of survivors",
+        heading: "The universe was a list of survivors — now partly repaired",
         paragraphs: [
-          "Prism's universe is today's index membership. Companies that went bankrupt, were taken over, or dropped out are absent. Every backtest therefore chooses from a list of companies selected precisely because they survived, and every result is better than reality by an amount that cannot be measured without historical membership lists.",
-          "This is not a small effect. It is worst for momentum strategies, which buy whatever has risen furthest — and the names that rose furthest before collapsing are exactly the ones missing from the list. When the strategy machine reports a backtest that turned £100k into millions, that number is arithmetically correct and economically meaningless. The excess over the control is the only figure worth reading.",
+          "For a long time Prism's universe was today's index membership: companies that went bankrupt, were taken over, or dropped out were simply absent, and every backtest chose from a list selected precisely because it survived. That version of the platform reported a momentum backtest that turned £100k into millions — arithmetically correct, economically meaningless.",
+          "The repair was to buy the index's membership history and recover the departed companies' data. Strategy backtests now select from the S&P 500 as it stood on each date: a company that later collapsed is eligible while it was a member and invisible after it left. Rerunning all twelve strategies on the corrected universe measured the bias directly — the change between the two leaderboards is its size.",
+          "The repair has edges, and they are stated wherever results appear. Membership records are thin before about 2012, so the early window remains partly survivor-only. A few departed companies have no retrievable data. Long-tenured members whose join dates were never recorded are assumed present from the window start. And everything outside the strategy machine — the earnings study included — still runs on today's list.",
         ],
       },
       {
