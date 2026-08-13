@@ -138,3 +138,32 @@ def test_summary_reports_round_trips_and_drawdown():
     summary = summarise(result)
     assert summary["max_drawdown_pct"] <= 0
     assert summary["trades"] == len(result.trades)
+
+
+def test_equity_is_marked_every_trading_day_not_just_on_rebalances():
+    """Drawdown measured only at rebalance points misses the drawdown.
+
+    A crash that happens and recovers between two quarterly marks would be
+    invisible, and the monthly return series would actually be quarterly —
+    which silently corrupts Sharpe and the track-record maths downstream.
+    """
+    path = [100.0] * 30 + [50.0] + [100.0] * 49  # one-day crash mid-window
+    service = make_service({"AAA": path})
+    rules = rules_top1_momentum(frequency="quarterly")
+    result = simulate(service, rules, service.calendar[25], service.calendar[-1],
+                      costs=CostModel(commission_per_order=0, us_small_bps=0,
+                                      us_mid_bps=0, us_large_bps=0))
+    marked = {d for d, _ in result.equity_curve}
+    expected = {d for d in service.calendar if d >= service.calendar[25]}
+    assert marked == expected
+
+
+def test_monthly_returns_are_monthly_even_when_rebalancing_quarterly():
+    path = [100 * (1.002 ** i) for i in range(200)]
+    service = make_service({"AAA": path})
+    result = simulate(service, rules_top1_momentum(frequency="quarterly"),
+                      service.calendar[30], service.calendar[-1])
+    months = [row["month"] for row in result.monthly_returns()]
+    assert len(months) == len(set(months))
+    # ~170 trading days is roughly eight months, not two quarters.
+    assert len(months) >= 5

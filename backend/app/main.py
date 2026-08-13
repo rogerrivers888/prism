@@ -11,6 +11,7 @@ from app.assistant_router import router as assistant_router
 from app.backtest_router import router as backtest_router
 from app.earnings_router import router as earnings_router
 from app.glossary_router import router as glossary_router
+from app.strategies_router import router as strategies_router
 from app.company_router import router as company_router
 from app.screens_router import book, decisions_router, research, screener, watchlist_router
 from app.worker.router import router as jobs_router
@@ -39,6 +40,7 @@ app.include_router(lenses_router)
 app.include_router(jobs_router)
 app.include_router(earnings_router)
 app.include_router(glossary_router)
+app.include_router(strategies_router)
 app.include_router(backtest_router)
 
 # DEV-ONLY: temporary endpoints, remove once real ones exist.

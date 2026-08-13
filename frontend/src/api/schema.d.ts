@@ -685,6 +685,143 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/strategies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Leaderboard
+         * @description Boards split by horizon, each ranked on full-history expectancy.
+         *
+         *     Short-term and long-term strategies are not comparable: a weekly momentum
+         *     book and a quarterly value screen have different trade counts, different
+         *     cost drags and different meanings of 'a good month'. Ranking them in one
+         *     table would just sort by horizon.
+         */
+        get: operations["leaderboard_strategies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/strategies/trades-today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Trades Today
+         * @description What every strategy did this morning, and why.
+         *
+         *     Defaults to the most recent fill date rather than today's calendar date,
+         *     so the view is useful at a weekend instead of empty.
+         */
+        get: operations["trades_today_strategies_trades_today_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/strategies/{strategy_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detail */
+        get: operations["detail_strategies__strategy_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/strategies/{strategy_id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Promote
+         * @description Promotion is a human act. The gate can say a strategy is eligible; only
+         *     this endpoint, called by Roger, moves it.
+         */
+        post: operations["promote_strategies__strategy_id__promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/strategies/{strategy_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause */
+        post: operations["pause_strategies__strategy_id__pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/strategies/{strategy_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire */
+        post: operations["retire_strategies__strategy_id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/strategies/{strategy_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate */
+        post: operations["activate_strategies__strategy_id__activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/backtest/pre-earnings": {
         parameters: {
             query?: never;
@@ -1274,6 +1411,32 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** Holding */
+        Holding: {
+            /** Ticker */
+            ticker: string;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Avg Cost */
+            avg_cost: number;
+            /**
+             * Opened At
+             * Format: date
+             */
+            opened_at: string;
+            /** Last Price */
+            last_price: number | null;
+            /** Unrealised Pct */
+            unrealised_pct: number | null;
+            /** Rule Fired */
+            rule_fired: string;
+            /** Metric Values */
+            metric_values: {
+                [key: string]: unknown;
+            };
+        };
         /** JobRunOut */
         JobRunOut: {
             /** Job */
@@ -1400,6 +1563,11 @@ export interface components {
             stale_days: number | null;
             /** Scores */
             scores: components["schemas"]["LensScoreOut"][];
+        };
+        /** LifecycleRequest */
+        LifecycleRequest: {
+            /** Reason */
+            reason: string;
         };
         /** MetricSeries */
         MetricSeries: {
@@ -1566,6 +1734,13 @@ export interface components {
              */
             persist: boolean;
         };
+        /** PromoteRequest */
+        PromoteRequest: {
+            /** Stage */
+            stage: string;
+            /** Note */
+            note?: string | null;
+        };
         /** SavedScreenIn */
         SavedScreenIn: {
             /** Name */
@@ -1640,6 +1815,73 @@ export interface components {
              * @default 5
              */
             commission_bps: number;
+        };
+        /** StrategyDetail */
+        StrategyDetail: {
+            /** Strategy Id */
+            strategy_id: string;
+            /** Name */
+            name: string;
+            /** Hypothesis */
+            hypothesis: string;
+            /** Authority */
+            authority: string;
+            /** Citation */
+            citation: string | null;
+            /** Horizon */
+            horizon: string;
+            /** Status */
+            status: string;
+            /** Stage */
+            stage: string;
+            /**
+             * Registered At
+             * Format: date
+             */
+            registered_at: string;
+            /** Expected Trade Frequency */
+            expected_trade_frequency: string;
+            /** Expected Holding Period */
+            expected_holding_period: string;
+            /** Predicted Performance */
+            predicted_performance: string;
+            /** Encoding Deviations */
+            encoding_deviations: string | null;
+            /** Decay Note */
+            decay_note: string;
+            /** Parent Strategy Id */
+            parent_strategy_id: string | null;
+            /** Duplicate Of */
+            duplicate_of: string | null;
+            /** Duplicate Correlation */
+            duplicate_correlation: number | null;
+            /** Duplicate Override Note */
+            duplicate_override_note: string | null;
+            /** Rules Json */
+            rules_json: {
+                [key: string]: unknown;
+            };
+            /** Rules Plain */
+            rules_plain: string[];
+            /** Holdings */
+            holdings: components["schemas"]["Holding"][];
+            /** Trades */
+            trades: components["schemas"]["TradeRow"][];
+            /** Equity Curve */
+            equity_curve: [
+                string,
+                number
+            ][];
+            /** Paper */
+            paper: {
+                [key: string]: unknown;
+            };
+            /** Backtest */
+            backtest: {
+                [key: string]: unknown;
+            } | null;
+            /** Decay Warning */
+            decay_warning: string | null;
         };
         /** SweepRequest */
         SweepRequest: {
@@ -1746,6 +1988,37 @@ export interface components {
              * Format: date-time
              */
             occurred_at: string;
+        };
+        /** TradeRow */
+        TradeRow: {
+            /** Ticker */
+            ticker: string;
+            /** Side */
+            side: string;
+            /** Quantity */
+            quantity: number;
+            /** Price */
+            price: number;
+            /** Spread Cost */
+            spread_cost: number;
+            /** Commission */
+            commission: number;
+            /**
+             * Signal Date
+             * Format: date
+             */
+            signal_date: string;
+            /**
+             * Fill Date
+             * Format: date
+             */
+            fill_date: string;
+            /** Rule Fired */
+            rule_fired: string;
+            /** Metric Values */
+            metric_values: {
+                [key: string]: unknown;
+            };
         };
         /** UniverseOut */
         UniverseOut: {
@@ -3245,6 +3518,238 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    leaderboard_strategies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    trades_today_strategies_trades_today_get: {
+        parameters: {
+            query?: {
+                on?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detail_strategies__strategy_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                strategy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_strategies__strategy_id__promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                strategy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_strategies__strategy_id__pause_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                strategy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LifecycleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_strategies__strategy_id__retire_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                strategy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LifecycleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activate_strategies__strategy_id__activate_post: {
+        parameters: {
+            query?: {
+                override_note?: string | null;
+            };
+            header?: never;
+            path: {
+                strategy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

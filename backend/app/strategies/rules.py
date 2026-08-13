@@ -57,6 +57,17 @@ PRICE_FEATURES = {
 
 SPECIAL_FEATURES = {"piotroski_f", "dispersion", "earnings_yield_ebit", "roc_greenblatt"}
 
+# Derived ratios the lens engine already computes; a rule may reference any of
+# them by name. Kept explicit so a typo is a registration error rather than a
+# silently absent feature that quietly fails every condition it appears in.
+METRIC_FEATURES = {
+    "pe_ratio", "ev_ebitda", "fcf_yield", "price_to_book", "dividend_yield",
+    "roic", "gross_profitability", "gross_margin", "net_debt_to_ebitda",
+    "interest_cover", "fcf_conversion", "inventory_to_sales", "days_inventory",
+    "days_inventory_change", "ebitda", "fcf",
+    "price_vs_50dma", "price_vs_200dma", "ma50_vs_ma200", "pct_above_52w_low",
+}
+
 SECTOR_FEATURES = {"cycle_median_delta"}
 
 
@@ -74,6 +85,8 @@ def validate_feature(name: str) -> str:
         raise ValueError(f"unknown special feature '{rest}'")
     if namespace == "sector" and rest not in SECTOR_FEATURES:
         raise ValueError(f"unknown sector feature '{rest}'")
+    if namespace == "metric" and rest not in METRIC_FEATURES:
+        raise ValueError(f"unknown metric '{rest}'")
     return name
 
 

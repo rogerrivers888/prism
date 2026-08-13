@@ -75,7 +75,10 @@ class StrategyBacktest(Base):
     strategy_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     results: Mapped[dict] = mapped_column(JSONB)
     monthly_returns: Mapped[list] = mapped_column(JSONB)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # server_default, so SQLAlchemy omits the column and Postgres fills it.
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
 
 class DuplicateStrategyError(Exception):

@@ -305,6 +305,83 @@ def deflate(
 # ---------------------------------------------------------------- the gate
 
 
+def caveats(results: dict, rules: StrategyRules) -> list[dict]:
+    """What is wrong with these numbers, attached to them.
+
+    The survivorship note leads and is unconditional. Prism's universe is
+    today's index membership, so the backtest picks from a list of companies
+    selected precisely BECAUSE they survived. For a momentum strategy that is
+    close to fatal: it loads up on whatever rose most, and every name that
+    rose most and then collapsed is missing from the list entirely.
+    """
+    out = [{
+        "severity": "high",
+        "title": "The absolute returns here are not real",
+        "body": (
+            "The universe is the index as it stands today. Companies that went "
+            "bankrupt, were taken over, or fell out of the index are absent, so "
+            "the backtest is choosing from a list of known survivors. This "
+            "flatters every strategy, and it flatters momentum strategies most "
+            "of all, because they buy whatever has risen furthest and the names "
+            "that rose furthest before collapsing are the ones missing. Read the "
+            "excess over the control, never the headline return."
+        ),
+    }]
+
+    overall = results.get("overall", {})
+    mean = overall.get("mean_trade_return_pct")
+    median = overall.get("median_trade_return_pct")
+    if mean is not None and median is not None and median != 0 and mean > 3 * median:
+        out.append({
+            "severity": "medium",
+            "title": "A handful of trades produced most of the return",
+            "body": (
+                f"The average trade returned {mean:.1f}% while the typical one "
+                f"returned {median:.1f}%. That gap means a few enormous winners "
+                "carry the whole result, so the average describes those winners "
+                "rather than what to expect from the next trade."
+            ),
+        })
+
+    control = results.get("drift_control") or {}
+    if control.get("samples"):
+        out.append({
+            "severity": "medium",
+            "title": "What the control does and does not remove",
+            "body": (
+                "The control buys random companies from the same universe over "
+                "the same weeks, so it removes the market's drift and part of the "
+                "survivor effect. It cannot remove all of it: inside a list of "
+                "survivors, 'has already risen' predicts 'rises further' partly "
+                "because we already know none of them failed."
+            ),
+        })
+
+    deflation = results.get("deflation", {})
+    if deflation.get("n_trials", 1) > 1:
+        out.append({
+            "severity": "medium",
+            "title": f"{deflation['n_trials']} related strategies were tried",
+            "body": (
+                "Variations on one idea are separate attempts, and the best of "
+                "several attempts looks better than any of them deserves. The "
+                "deflated figure is the one to read."
+            ),
+        })
+
+    if rules.rebalance.frequency in ("weekly", "monthly"):
+        out.append({
+            "severity": "low",
+            "title": "Costs are modelled, not observed",
+            "body": (
+                "Spread is assumed by size band and commission is flat. A "
+                "strategy that rebalances this often is unusually sensitive to "
+                "those assumptions being optimistic."
+            ),
+        })
+    return out
+
+
 @dataclass
 class GateOutcome:
     passed: bool
@@ -410,6 +487,7 @@ async def run_gate(
         },
         "deflation": deflate(trade_returns, monthly_values, len(family)),
     }
+    results["caveats"] = caveats(results, rules)
     outcome = assess(results)
     results["gate"] = {
         "eligible_for_paper": outcome.passed,
