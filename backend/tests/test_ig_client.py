@@ -27,10 +27,15 @@ def login_response(request):
 
 
 def test_the_client_exposes_no_way_to_trade():
-    """Read-only is a property of the surface, not a promise in a comment."""
+    """Read-only is a property of the surface, not a promise in a comment.
+
+    switch_account is deliberately permitted: it is a session operation that
+    moves no money and places no order, and IG's /positions endpoint cannot
+    be scoped any other way.
+    """
     surface = {name for name in dir(IGClient) if not name.startswith("_")}
-    for forbidden in ("create_position", "close_position", "amend", "deal", "order",
-                      "post", "delete", "put"):
+    for forbidden in ("create", "close", "amend", "deal", "order", "delete",
+                      "confirm", "otc", "working"):
         assert not any(forbidden in name for name in surface), (
             f"IGClient exposes '{forbidden}' — this integration must stay read-only"
         )
@@ -97,7 +102,7 @@ async def test_expired_session_triggers_exactly_one_relogin():
         return httpx.Response(200, json={"positions": []})
 
     client = make_client(handler)
-    result = await client.positions("ABC1")
+    result = await client.get("/positions", version="2")
     assert result == {"positions": []}
     assert state["logins"] == 2, "should re-login once, not loop"
 
@@ -114,25 +119,30 @@ async def test_a_401_that_persists_does_not_loop_forever():
 
     client = make_client(handler)
     with pytest.raises(IGError):
-        await client.positions("ABC1")
+        await client.get("/positions", version="2")
     # One initial login plus one retry login. Never an unbounded loop against
     # a rate-limited API.
     assert state["logins"] <= 2
 
 
 @pytest.mark.asyncio
-async def test_account_scoping_header_is_sent():
-    seen = {}
+async def test_transactions_are_scoped_by_switching_too():
+    """Same trap as positions: history answers for the active account."""
+    switched = []
 
     def handler(request):
-        if request.url.path.endswith("/session"):
+        if request.url.path.endswith("/session") and request.method == "POST":
             return login_response(request)
-        seen["account"] = request.headers.get("IG-ACCOUNT-ID")
-        return httpx.Response(200, json={"positions": []})
+        if request.method == "PUT":
+            import json as json_module
+
+            switched.append(json_module.loads(request.content)["accountId"])
+            return httpx.Response(200, json={})
+        return httpx.Response(200, json={"transactions": []})
 
     client = make_client(handler)
-    await client.positions("PENSION1")
-    assert seen["account"] == "PENSION1"
+    await client.transactions("PENSION1", "2024-01-01", "2025-01-01")
+    assert switched == ["PENSION1"]
 
 
 @pytest.mark.asyncio
@@ -141,8 +151,10 @@ async def test_from_keyword_is_translated_for_ig():
     seen = {}
 
     def handler(request):
-        if request.url.path.endswith("/session"):
+        if request.url.path.endswith("/session") and request.method == "POST":
             return login_response(request)
+        if request.method == "PUT":
+            return httpx.Response(200, json={})
         seen["query"] = str(request.url.query)
         return httpx.Response(200, json={"transactions": []})
 
@@ -150,3 +162,53 @@ async def test_from_keyword_is_translated_for_ig():
     await client.transactions("ABC1", "2024-01-01", "2025-01-01")
     assert "from=2024-01-01" in seen["query"]
     assert "from_" not in seen["query"]
+
+
+@pytest.mark.asyncio
+async def test_positions_switch_the_session_to_the_right_account():
+    """IG ignores IG-ACCOUNT-ID on /positions and answers for whichever
+    account the session is on. Verified against the live API: without the
+    switch, both of Roger's accounts return the same positions and every one
+    is counted twice."""
+    calls = []
+
+    def handler(request):
+        if request.url.path.endswith("/session") and request.method == "POST":
+            return login_response(request)
+        if request.url.path.endswith("/session") and request.method == "PUT":
+            import json as json_module
+
+            calls.append(("switch", json_module.loads(request.content)["accountId"]))
+            return httpx.Response(
+                200, json={},
+                headers={"CST": "cst-2", "X-SECURITY-TOKEN": "xst-2"},
+            )
+        calls.append(("positions", request.headers.get("CST")))
+        return httpx.Response(200, json={"positions": []})
+
+    client = make_client(handler)
+    await client.positions("SPREAD1")
+    await client.positions("CFD1")
+    assert ("switch", "SPREAD1") in calls
+    assert ("switch", "CFD1") in calls
+    # The reissued token must be adopted, or every later call is silently
+    # unauthenticated and returns an empty body rather than an error.
+    assert ("positions", "cst-2") in calls
+
+
+@pytest.mark.asyncio
+async def test_switching_twice_to_the_same_account_is_skipped():
+    switches = []
+
+    def handler(request):
+        if request.url.path.endswith("/session") and request.method == "POST":
+            return login_response(request)
+        if request.method == "PUT":
+            switches.append(1)
+            return httpx.Response(200, json={})
+        return httpx.Response(200, json={"positions": []})
+
+    client = make_client(handler)
+    await client.positions("A1")
+    await client.positions("A1")
+    assert len(switches) == 1, "should not re-switch to the account already active"

@@ -76,6 +76,7 @@ class IGClient:
         self._client = client
         self._max_retries = max_retries
         self._session: IGSession | None = None
+        self._active_account: str | None = None
         # One login at a time: a concurrent sync must not race two sessions,
         # because IG invalidates the older one and both callers then fail.
         self._login_lock = asyncio.Lock()
@@ -148,6 +149,7 @@ class IGClient:
                     opened_at=datetime.now(timezone.utc),
                     accounts=body.get("accounts", []),
                 )
+                self._active_account = body.get("currentAccountId")
                 logger.info(
                     "ig session opened, %d account(s) visible",
                     len(self._session.accounts),
@@ -245,31 +247,83 @@ class IGClient:
 
     # ---------------------------------------------------------- read-only API
 
+    async def switch_account(self, account_id: str) -> None:
+        """Point the session at one account.
+
+        The ONLY non-GET call in this client, and it exists because IG's
+        /positions endpoint ignores the IG-ACCOUNT-ID header and always
+        answers for the session's active account. Without switching, both of
+        Roger's accounts return the same positions and Prism double-counts
+        every one of them — verified against the live API before this was
+        written.
+
+        It is a session operation, not a trading one: it moves no money,
+        places no order, and changes nothing about the account itself. IG
+        reissues CST and X-SECURITY-TOKEN on a switch, so the new tokens are
+        adopted here; missing that silently unauthenticates every later call,
+        which returns 200 with an empty body rather than an error.
+        """
+        await self._ensure_session()
+        client = self._client or httpx.AsyncClient(timeout=60)
+        owned = self._client is None
+        try:
+            response = await client.put(
+                f"{self._base}/session",
+                headers=self._headers(version="1"),
+                json={"accountId": account_id},
+            )
+            if response.status_code >= 400:
+                raise IGError(
+                    f"IG {response.status_code} switching to account: "
+                    f"{self._redact(response.text[:200])}"
+                )
+            if self._session:
+                if response.headers.get("CST"):
+                    self._session.cst = response.headers["CST"]
+                if response.headers.get("X-SECURITY-TOKEN"):
+                    self._session.security_token = response.headers["X-SECURITY-TOKEN"]
+            self._active_account = account_id
+        except IGError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            raise self._scrub(exc) from None
+        finally:
+            if owned:
+                await client.aclose()
+
     async def accounts(self) -> dict:
         return await self.get("/accounts")
 
     async def positions(self, account_id: str) -> dict:
-        """Open positions for one account. Version 2 carries the full
-        market block, including instrument type and expiry."""
-        return await self.get("/positions", version="2", account_id=account_id)
+        """Open positions for one account.
+
+        Switches the session first: IG answers /positions for the active
+        account regardless of the IG-ACCOUNT-ID header.
+        """
+        if self._active_account != account_id:
+            await self.switch_account(account_id)
+        return await self.get("/positions", version="2")
 
     async def transactions(
         self, account_id: str, from_date: str, to_date: str, page_size: int = 500
     ) -> dict:
         """Transaction history. IG limits how far back this reaches; whatever
         it gives is what exists."""
+        if self._active_account != account_id:
+            await self.switch_account(account_id)
         return await self.get(
             "/history/transactions",
             version="2",
-            account_id=account_id,
             from_=from_date,
             to=to_date,
             pageSize=page_size,
         )
 
     async def activity(self, account_id: str, from_date: str) -> dict:
+        if self._active_account != account_id:
+            await self.switch_account(account_id)
         return await self.get(
-            "/history/activity", version="3", account_id=account_id,
+            "/history/activity", version="3",
             from_=from_date, detailed="true", pageSize=500,
         )
 
