@@ -179,6 +179,96 @@ class PaperTradeExecuted(_Payload):
     metric_values: dict
 
 
+class IGPositionObserved(_Payload):
+    """What IG reported for one position at one moment.
+
+    An observation, not an instruction. occurred_at carries IG's own timestamp
+    where it gives one, recorded_at is when Prism looked — the two must never
+    be collapsed, because a position opened on Tuesday and first seen on
+    Thursday is a different fact from one opened on Thursday.
+    """
+
+    event_type: Literal["IGPositionObserved"] = "IGPositionObserved"
+    account_id: str
+    deal_id: str
+    epic: str
+    direction: Literal["BUY", "SELL"]
+    size: Decimal
+    open_level: Decimal | None = None
+    current_level: Decimal | None = None
+    currency: str | None = None
+    stop_level: Decimal | None = None
+    limit_level: Decimal | None = None
+    contract_size: Decimal | None = None
+    instrument_type: str | None = None
+    instrument_name: str | None = None
+    # IG's expiry string: "-" for cash positions, "SEP-26" or a date for
+    # dated products and options.
+    expiry: str | None = None
+
+
+class IGPositionClosed(_Payload):
+    """IG stopped reporting a position we had seen.
+
+    Recorded as its own event rather than by deleting a row: the ledger is
+    append-only, and "gone from the feed" is an observation about IG, not
+    proof of what happened.
+    """
+
+    event_type: Literal["IGPositionClosed"] = "IGPositionClosed"
+    account_id: str
+    deal_id: str
+    last_seen: str
+
+
+class IGTradeDetected(_Payload):
+    """A transaction IG reports in its history."""
+
+    event_type: Literal["IGTradeDetected"] = "IGTradeDetected"
+    account_id: str
+    reference: str
+    epic: str | None = None
+    instrument_name: str | None = None
+    transaction_type: str | None = None
+    size: Decimal | None = None
+    open_level: Decimal | None = None
+    close_level: Decimal | None = None
+    profit_loss: Decimal | None = None
+    currency: str | None = None
+    cash_transaction: bool = False
+
+
+class IGBalanceObserved(_Payload):
+    event_type: Literal["IGBalanceObserved"] = "IGBalanceObserved"
+    account_id: str
+    balance: Decimal | None = None
+    deposit: Decimal | None = None
+    profit_loss: Decimal | None = None
+    available: Decimal | None = None
+    currency: str | None = None
+
+
+class FundingCharged(_Payload):
+    """Overnight funding on a leveraged position, computed by Prism.
+
+    Explicitly estimated: IG bills its own figure and Prism does not receive
+    it per-position. The number exists to make an invisible cost visible, and
+    it is labelled as an estimate everywhere it appears.
+    """
+
+    event_type: Literal["FundingCharged"] = "FundingCharged"
+    account_id: str
+    deal_id: str
+    as_of: str
+    # The whole point: funding is charged on the full position value, not on
+    # the margin actually put up.
+    notional: Decimal
+    annual_rate_pct: Decimal
+    charge: Decimal
+    currency: str | None = None
+    estimated: bool = True
+
+
 EventPayload = Annotated[
     Union[
         TradeExecuted,
@@ -196,6 +286,11 @@ EventPayload = Annotated[
         StrategyRetired,
         StrategyPromoted,
         PaperTradeExecuted,
+        IGPositionObserved,
+        IGPositionClosed,
+        IGTradeDetected,
+        IGBalanceObserved,
+        FundingCharged,
     ],
     Field(discriminator="event_type"),
 ]
