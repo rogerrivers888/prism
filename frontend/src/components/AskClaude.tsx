@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from "../api/config";
 import { Drawer } from "./Drawer";
 import { useGlossary } from "./GlossaryProvider";
@@ -13,21 +13,29 @@ type Turn = { role: "user" | "assistant"; content: string; refused?: boolean };
 export function AskClaude({
   context,
   onClose,
+  suggestions,
+  seedPrompt,
 }: {
   context: unknown;
   onClose: () => void;
+  /** One-click starting questions, so a blank box is never the first thing
+   *  someone who doesn't know what to ask has to face. */
+  suggestions?: string[];
+  /** Opens with this question already asked. */
+  seedPrompt?: string;
 }) {
   const { prose } = useGlossary();
   // One set for the whole conversation, so a term links on its first mention
   // and is left alone in every later reply rather than lighting up repeatedly.
   const linkedSoFar = useMemo(() => new Set<string>(), []);
   const [turns, setTurns] = useState<Turn[]>([]);
+  const [seeded, setSeeded] = useState(false);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const send = async () => {
-    const question = draft.trim();
+  const send = async (override?: string) => {
+    const question = (override ?? draft).trim();
     if (!question || busy) return;
     const next = [...turns, { role: "user" as const, content: question }];
     setTurns(next);
@@ -63,6 +71,15 @@ export function AskClaude({
     }
   };
 
+  useEffect(() => {
+    // A seeded question is asked once, on open, so a "Explain this to me"
+    // button lands on an answer rather than a blank box.
+    if (seedPrompt && !seeded) {
+      setSeeded(true);
+      void send(seedPrompt);
+    }
+  }, [seedPrompt, seeded]);
+
   return (
     <Drawer title="Ask Claude" subtitle="explains and stress-tests — never recommends" onClose={onClose}>
       <div className="flex h-full flex-col">
@@ -75,11 +92,22 @@ export function AskClaude({
                 figure, argue the other side of your thesis, and say what a lens
                 is blind to.
               </p>
-              <ul className="mt-2 list-disc pl-4">
-                <li>"Why is the value lens so much higher than absolute?"</li>
-                <li>"What's the strongest argument against this being cheap?"</li>
-                <li>"What is this lens missing?"</li>
-              </ul>
+              <div className="mt-3 space-y-1.5">
+                {(suggestions ?? [
+                  "Why is the value lens so much higher than absolute?",
+                  "What's the strongest argument against this being cheap?",
+                  "What is this lens missing?",
+                ]).map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => void send(prompt)}
+                    className="block w-full rounded border border-border px-2 py-1.5 text-left text-sm text-text hover:bg-surface-sunken"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {turns.map((turn, index) => (

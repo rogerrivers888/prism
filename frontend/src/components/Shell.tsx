@@ -2,6 +2,8 @@ import { NavLink, Outlet } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
+  // First, permanently: the answer to "I have no idea how to use this".
+  { to: "/getting-started", label: "Getting started" },
   { to: "/", label: "Universe", end: true },
   { to: "/screener", label: "Screener" },
   { to: "/research", label: "Research" },

@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Backtest from "./routes/Backtest";
+import GettingStarted from "./routes/GettingStarted";
 import Glossary from "./routes/Glossary";
 import Principles from "./routes/Principles";
 import Strategies from "./routes/Strategies";
 import Strategy from "./routes/Strategy";
 import { GlossaryProvider } from "./components/GlossaryProvider";
+import { ScreenContextProvider } from "./components/ScreenContext";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Shell } from "./components/Shell";
 import { Universe } from "./routes/Universe";
@@ -24,6 +26,7 @@ export default function App() {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <GlossaryProvider>
+          <ScreenContextProvider>
           <BrowserRouter>
             <Routes>
               <Route element={<Shell />}>
@@ -38,9 +41,11 @@ export default function App() {
               <Route path="/strategies" element={<Strategies />} />
               <Route path="/strategies/:id" element={<Strategy />} />
               <Route path="/principles" element={<Principles />} />
+              <Route path="/getting-started" element={<GettingStarted />} />
               </Route>
             </Routes>
           </BrowserRouter>
+          </ScreenContextProvider>
         </GlossaryProvider>
       </QueryClientProvider>
     </ThemeProvider>
