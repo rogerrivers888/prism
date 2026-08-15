@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { req, useClips, usePoints, useSectorAggregates, type Point } from "../api/screens";
+import { PagePurpose } from "../components/PagePurpose";
+import { useRegisterScreen } from "../components/ScreenContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { EmptyState } from "../components/EmptyState";
 import { AskClaude } from "../components/AskClaude";
@@ -11,6 +13,16 @@ export function Research() {
   const points = usePoints(scope);
   const [search, setSearch] = useState("");
   const clips = useClips(search);
+
+  useRegisterScreen(
+    "Research notes",
+    { points: points.data?.length ?? 0, clips: clips.data?.length ?? 0, scope },
+    [
+      "What should I be writing down here?",
+      "Argue the other side of what I have written",
+      "What am I likely to be missing about this company?",
+    ],
+  );
   const aggregates = useSectorAggregates();
   const [stressing, setStressing] = useState<Point | null>(null);
 
@@ -28,6 +40,15 @@ export function Research() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
         <h1 className="font-display text-3xl font-semibold tracking-tight">Research</h1>
+
+        <div className="mt-3 max-w-3xl">
+          <PagePurpose
+            id="research"
+            title="Research"
+            what="Somewhere to keep what you have read and what you have concluded, attached to the company or sector it concerns. Points are your own views; clips are things you found worth saving."
+            firstStep="writing down one thing you currently believe about a company you follow, and marking whether it is a reason to be positive or negative. Prism can then argue the other side of it."
+          />
+        </div>
 
         <label className="mt-2 flex items-center gap-2 text-xs text-text-muted">
           Sector

@@ -1,7 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { usePromote, useStrategy, type StrategyDetail } from "../api/strategies";
+import { useStrategy } from "../api/strategies";
 import { useGlossary } from "../components/GlossaryProvider";
+import { PromoteFlow } from "../components/PromoteFlow";
+import { useRegisterScreen } from "../components/ScreenContext";
+import {
+  annualised,
+  explainDrawdown,
+  explainEdge,
+  explainPerTrade,
+  explainTotalReturn,
+  explainWinRate,
+  windowLabel,
+  yearsBetween,
+} from "../lib/explain";
+import { markDone } from "../lib/progress";
 
 const pct = (v: number | null | undefined, digits = 2) =>
   v === null || v === undefined ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(digits)}%`;
@@ -55,61 +68,6 @@ function EquityCurve({ points }: { points: [string, number][] }) {
   );
 }
 
-function Promote({ strategy }: { strategy: StrategyDetail }) {
-  const promote = usePromote();
-  const [note, setNote] = useState("");
-  const gate = strategy.backtest?.gate;
-  const eligible = gate?.eligible_for_paper;
-
-  if (strategy.stage !== "backtest") {
-    return (
-      <p className="text-sm text-text-muted">
-        Already promoted to <strong>{strategy.stage}</strong>.
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      {!eligible && gate && (
-        <div className="border-l-2 border-warning bg-warning/10 px-3 py-2 text-sm">
-          <p className="font-medium">Not eligible for paper trading.</p>
-          <ul className="mt-1 list-disc pl-4 text-text-muted">
-            {(gate.blocking_reasons ?? []).map((reason: string) => (
-              <li key={reason}>{reason}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {eligible && (
-        <p className="text-sm text-text-muted">
-          Passed the backtest gate. Promotion is still your call — the machine never
-          promotes anything on its own.
-        </p>
-      )}
-      <input
-        value={note}
-        onChange={(event) => setNote(event.target.value)}
-        placeholder="Why you're promoting it (recorded permanently)"
-        className="w-full rounded border border-border bg-surface px-2 py-1 text-sm"
-      />
-      <button
-        type="button"
-        disabled={!eligible || promote.isPending}
-        onClick={() =>
-          promote.mutate({ id: strategy.strategy_id, stage: "paper", note: note || undefined })
-        }
-        className="rounded border border-border px-3 py-1.5 text-sm disabled:opacity-40"
-      >
-        {promote.isPending ? "Promoting…" : "Promote to paper trading"}
-      </button>
-      {promote.error && (
-        <p className="text-sm text-negative">{promote.error.message}</p>
-      )}
-    </div>
-  );
-}
-
 function MetricList({ values }: { values: Record<string, number> }) {
   const { open } = useGlossary();
   const entries = Object.entries(values).filter(([, v]) => typeof v === "number");
@@ -140,6 +98,29 @@ export default function Strategy() {
   const { prose } = useGlossary();
   const [showJson, setShowJson] = useState(false);
 
+  useEffect(() => {
+    if (data) markDone("read_strategy");
+  }, [data]);
+
+  useRegisterScreen(
+    data ? `Strategy: ${data.name}` : "Strategy",
+    data
+      ? {
+          name: data.name, authority: data.authority, hypothesis: data.hypothesis,
+          stage: data.stage, rules_plain: data.rules_plain,
+          backtest_summary: data.backtest?.overall,
+          beat_random_pct_per_trade: data.backtest?.excess_over_drift_pct,
+          holdings: data.holdings.length,
+        }
+      : null,
+    [
+      "Explain this strategy to me in simple terms",
+      "Should I promote this? Argue both sides",
+      "What would have to go wrong for this to lose money?",
+      "What is this strategy blind to?",
+    ],
+  );
+
   if (isLoading) return <p className="p-6 text-sm text-text-muted">Loading…</p>;
   if (error || !data)
     return <p className="p-6 text-sm text-negative">{(error as Error)?.message}</p>;
@@ -159,6 +140,9 @@ export default function Strategy() {
           {data.authority} · {data.horizon} horizon · {data.stage} · {data.status}
         </p>
       </header>
+
+      {/* The decision this page exists for, before three screens of tables. */}
+      <PromoteFlow strategy={data} />
 
       {data.decay_warning && (
         <div className="border-l-2 border-warning bg-warning/10 px-3 py-2 text-sm">
@@ -184,7 +168,7 @@ export default function Strategy() {
       )}
 
       <section className="space-y-4">
-        <h2 className="font-display text-lg font-semibold">What it believes</h2>
+        <h2 className="font-display text-lg font-semibold">What it believes, and who came up with it</h2>
         <dl className="space-y-3">
           <Field label="Hypothesis">{prose(data.hypothesis)}</Field>
           {data.citation && (
@@ -203,7 +187,11 @@ export default function Strategy() {
       </section>
 
       <section>
-        <h2 className="font-display text-lg font-semibold">The rules</h2>
+        <h2 className="font-display text-lg font-semibold">The exact rules it follows</h2>
+        <p className="mt-1 text-sm text-text-muted">
+          These run automatically. There is no judgement involved and no way for the
+          strategy to change its mind.
+        </p>
         <ul className="mt-2 space-y-1 text-sm">
           {data.rules_plain.map((line, index) => (
             <li key={index}>{line}</li>
@@ -224,10 +212,16 @@ export default function Strategy() {
       </section>
 
       <section>
-        <h2 className="font-display text-lg font-semibold">Backtest and paper, side by side</h2>
-        <p className="mt-1 text-xs text-text-muted">
-          A large gap between these two is the warning sign: it usually means the
-          backtest was fitted to its own history.
+        <h2 className="font-display text-lg font-semibold">
+          How it did in testing, and with pretend money
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-text-muted">
+          The left column is what it would have done on past data{" "}
+          {windowLabel(backtest?.window?.start, backtest?.window?.end) &&
+            `(${windowLabel(backtest?.window?.start, backtest?.window?.end)})`}
+          . The right is what it has actually done since you started it. If the right
+          column ends up far worse than the left, that usually means the test was fitted
+          to its own history and the strategy never really worked.
         </p>
         <table className="mt-2 w-full text-sm">
           <thead>
@@ -266,9 +260,16 @@ export default function Strategy() {
         </table>
 
         {backtest && (
-          <p className="mt-3 text-sm leading-relaxed text-text-muted">
-            {prose(backtest.track_record_verdict ?? "")}
-          </p>
+          <div className="mt-3 space-y-1.5 text-sm leading-relaxed text-text-muted">
+            <p>
+              <strong>In plain English:</strong>{" "}
+              {explainTotalReturn(overall.total_return_pct, backtest.window?.start, backtest.window?.end)}
+            </p>
+            <p>{explainPerTrade(overall.mean_trade_return_pct)}, and it {explainWinRate(overall.win_rate)}.</p>
+            <p>{explainEdge(backtest.excess_over_drift_pct, overall.round_trips)}</p>
+            <p>On the way, {explainDrawdown(overall.max_drawdown_pct)}.</p>
+            <p>{prose(backtest.track_record_verdict ?? "")}</p>
+          </div>
         )}
 
         {deflation?.per_trade && (
@@ -288,7 +289,7 @@ export default function Strategy() {
 
       {data.equity_curve.length > 1 && (
         <section>
-          <h2 className="font-display text-lg font-semibold">Paper equity</h2>
+          <h2 className="font-display text-lg font-semibold">What the pretend £100,000 is worth over time</h2>
           <div className="mt-2">
             <EquityCurve points={data.equity_curve} />
           </div>
@@ -297,14 +298,31 @@ export default function Strategy() {
 
       {backtest?.regimes && Object.keys(backtest.regimes).length > 0 && (
         <section>
-          <h2 className="font-display text-lg font-semibold">By period</h2>
+          <h2 className="font-display text-lg font-semibold">How it did in each stretch of years</h2>
+          {/* This table confused Roger: the rows are yearly rates, the headline
+              is a compounded total, and nothing said so. */}
+          <p className="mt-1 text-sm leading-relaxed text-text-muted">
+            The average return of a single trade in each period — not the total for that
+            period. These build on each other over time, which is why modest yearly
+            numbers add up to a much bigger total: earning{" "}
+            {(() => {
+              const years = yearsBetween(backtest?.window?.start, backtest?.window?.end);
+              const perYear = annualised(overall.total_return_pct ?? 0, years);
+              return years && perYear
+                ? `about ${Math.abs(perYear).toFixed(0)}% a year for ${years.toFixed(0)} years really does compound to ${(overall.total_return_pct ?? 0).toFixed(0)}%`
+                : "a steady yearly return compounds into a much larger total";
+            })()}
+            . A period where it lost money is more informative than one where it won —
+            look for whether it ever stopped working entirely.
+          </p>
           <table className="mt-2 w-full text-sm">
             <tbody className="tabular">
               {Object.entries(backtest.regimes).map(([label, stats]: [string, any]) => (
                 <tr key={label} className="border-b border-border/50">
                   <td className="py-1">{label}</td>
                   <td className="py-1 text-right text-text-muted">
-                    {stats.underpowered ? `n=${stats.trades}` : stats.trades}
+                    {stats.trades} trades
+                    {stats.underpowered && " (too few to trust)"}
                   </td>
                   <td className="py-1 text-right">{pct(stats.mean_return_pct, 3)}</td>
                   <td className="py-1 text-right text-text-muted">
@@ -319,11 +337,13 @@ export default function Strategy() {
 
       <section>
         <h2 className="font-display text-lg font-semibold">
-          Holdings {data.holdings.length > 0 && `(${data.holdings.length})`}
+          What it owns right now {data.holdings.length > 0 && `(${data.holdings.length})`}
         </h2>
         {data.holdings.length === 0 ? (
           <p className="mt-1 text-sm text-text-muted">
-            Nothing held — this strategy has not been promoted to paper trading yet.
+            {data.stage === "backtest"
+              ? "It owns nothing because it has not been started. Once you give it pretend money it will buy shares by its own rules and they will be listed here, each with the exact rule that caused it."
+              : "It owns nothing right now. Its rules did not find anything worth holding at the last rebalance, which is a normal state rather than a fault."}
           </p>
         ) : (
           <ul className="mt-2 divide-y divide-border border-y border-border">
@@ -348,9 +368,13 @@ export default function Strategy() {
       </section>
 
       <section>
-        <h2 className="font-display text-lg font-semibold">Trade history</h2>
+        <h2 className="font-display text-lg font-semibold">Everything it has bought and sold</h2>
         {data.trades.length === 0 ? (
-          <p className="mt-1 text-sm text-text-muted">No trades yet.</p>
+          <p className="mt-1 text-sm text-text-muted">
+            {data.stage === "backtest"
+              ? "No trades because it has not been started. Nothing here has ever bought or sold anything."
+              : "No trades yet — the first will appear after the next overnight run, tomorrow at about 7am."}
+          </p>
         ) : (
           <ul className="mt-2 divide-y divide-border border-y border-border">
             {data.trades.map((trade, index) => (
@@ -376,12 +400,6 @@ export default function Strategy() {
         )}
       </section>
 
-      <section>
-        <h2 className="font-display text-lg font-semibold">Promotion</h2>
-        <div className="mt-2">
-          <Promote strategy={data} />
-        </div>
-      </section>
     </div>
   );
 }

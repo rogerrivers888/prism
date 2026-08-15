@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { CATEGORY_LABEL, useGlossaryTerms } from "../api/glossary";
 import { useGlossary } from "../components/GlossaryProvider";
+import { NothingYet, PagePurpose } from "../components/PagePurpose";
+import { useRegisterScreen } from "../components/ScreenContext";
 
 const ORDER = [
   "platform",
@@ -19,6 +21,11 @@ export default function Glossary() {
   const { data, isLoading, error } = useGlossaryTerms();
   const { open } = useGlossary();
   const [query, setQuery] = useState("");
+
+  useRegisterScreen("Glossary", { searching: query }, [
+    "Which of these terms should I understand first?",
+    "Explain the six lenses in one paragraph",
+  ]);
 
   const grouped = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -48,10 +55,14 @@ export default function Glossary() {
     <div className="mx-auto max-w-4xl p-6">
       <header>
         <h1 className="font-display text-2xl uppercase tracking-wide">Glossary</h1>
-        <p className="mt-1 max-w-2xl text-sm text-text-muted">
-          Every term Prism uses, in plain English. Any of these will also be clickable
-          wherever it appears elsewhere in the app.
-        </p>
+        <div className="mt-3 max-w-3xl">
+          <PagePurpose
+            id="glossary"
+            title="Glossary"
+            what="Every term Prism uses, explained without jargon, with a worked example and a note on where each one misleads people."
+            firstStep="searching for anything you have seen on another screen and not understood. These words are also clickable wherever they appear in the app — a dotted underline means there is a definition behind it."
+          />
+        </div>
       </header>
 
       <input
@@ -68,9 +79,12 @@ export default function Glossary() {
       {error && <p className="mt-2 text-sm text-warn">{(error as Error).message}</p>}
 
       {!isLoading && shown === 0 && (
-        <p className="mt-6 text-sm text-text-muted">
-          Nothing matches “{query}”. Try a shorter word, or the abbreviation.
-        </p>
+        <div className="mt-6">
+          <NothingYet
+            headline={`Nothing matches “${query}”`}
+            because="No term contains that word. Try a shorter word or the short form — searching 'bps' finds Basis point, and 'P/E' finds the price-to-earnings ratio."
+          />
+        </div>
       )}
 
       <div className="mt-6 space-y-8">

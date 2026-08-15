@@ -5,6 +5,9 @@ import { LENSES, LENS_BAR_CLASS, LENS_TEXT_CLASS, type LensName } from "../api/u
 import { AskClaude } from "../components/AskClaude";
 import { Drawer, DrawerStack } from "../components/Drawer";
 import { useGlossary } from "../components/GlossaryProvider";
+import { PagePurpose } from "../components/PagePurpose";
+import { useRegisterScreen } from "../components/ScreenContext";
+import { explainDispersion, explainLensScore } from "../lib/explain";
 import { EarningsPanel } from "../components/EarningsPanel";
 import { MetricChart } from "../components/MetricChart";
 
@@ -42,6 +45,16 @@ export function Company() {
   const { ticker = "" } = useParams();
   const { data, isLoading, error } = useCompany(ticker);
   const { open: openTerm } = useGlossary();
+
+  useRegisterScreen(
+    "Company detail",
+    null,
+    [
+      "Explain this company's scores to me in plain English",
+      "Where do these six views disagree, and what would settle it?",
+      "What is the strongest argument against buying this?",
+    ],
+  );
   const [absolute, setAbsolute] = useState(false);
   const [openLens, setOpenLens] = useState<LensName | null>(null);
   const [askOpen, setAskOpen] = useState(false);
@@ -104,7 +117,7 @@ export function Company() {
                 aria-pressed={!absolute}
                 className={`px-3 py-1 text-xs ${!absolute ? "bg-surface-sunken font-medium" : "text-text-muted"}`}
               >
-                Relative
+                vs its industry
               </button>
               <button
                 type="button"
@@ -112,7 +125,7 @@ export function Company() {
                 aria-pressed={absolute}
                 className={`px-3 py-1 text-xs ${absolute ? "bg-surface-sunken font-medium" : "text-text-muted"}`}
               >
-                Absolute
+                vs fixed standards
               </button>
             </div>
             <button
@@ -125,8 +138,22 @@ export function Company() {
           </div>
         </header>
 
+        <div className="mt-4 max-w-3xl">
+          <PagePurpose
+            id="company"
+            title="Company"
+            what="Everything Prism knows about one company, seen through six different lenses. Each bar below is one view, scored 0 to 100 against others in the same industry — a tall bar means it looks good on that particular measure, and nothing more."
+            firstStep="clicking any bar to see which numbers produced that score. Clicking a metric name anywhere on this page explains what it means. None of this is a recommendation."
+          />
+        </div>
+
         {/* Lens ribbon — vertical bars, click to open the breakdown. */}
         <section className="mt-5">
+          <p className="mb-2 text-sm text-text-muted">
+            {data.dispersion === null
+              ? "Not enough usable scores to compare the six views."
+              : explainDispersion(data.dispersion)}
+          </p>
           <div className="flex items-end gap-2 sm:gap-4">
             {LENSES.map((name) => {
               const lens = data.lenses.find((l) => l.lens === name);
@@ -135,6 +162,7 @@ export function Company() {
               return (
                 <button
                   key={name}
+                  title={explainLensScore(score, name)}
                   type="button"
                   onClick={() => setOpenLens(name)}
                   className="group flex flex-1 flex-col items-center gap-1"

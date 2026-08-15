@@ -8,6 +8,8 @@ import { DispersionCell } from "../components/Dispersion";
 import { DrawerStack } from "../components/Drawer";
 import { UniverseAdmin, useUniverseHealth } from "../components/UniverseAdmin";
 import { AskClaude } from "../components/AskClaude";
+import { PagePurpose } from "../components/PagePurpose";
+import { useRegisterScreen } from "../components/ScreenContext";
 import { StalenessBanner } from "../components/StalenessBanner";
 import {
   filterRows,
@@ -39,6 +41,7 @@ export function Universe() {
   const [search, setSearch] = useState("");
   const [adminOpen, setAdminOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
+
   const health = useUniverseHealth();
 
   const rows = data?.rows ?? [];
@@ -58,6 +61,22 @@ export function Universe() {
       items[index]?.kind === "header" ? HEADER_HEIGHT : ROW_HEIGHT,
     overscan: 12,
   });
+
+  useRegisterScreen(
+    "Universe",
+    {
+      companies: rows.length,
+      showing: items.filter((i) => i.kind === "row").length,
+      sorted_by: sortKey,
+      scores_shown: absolute ? "absolute" : "relative to industry",
+      as_of: data?.as_of,
+    },
+    [
+      "What am I looking at on this page?",
+      "What does 'disagreement' mean and why is it the default sort?",
+      "What is the difference between the relative and absolute scores?",
+    ],
+  );
 
   const toggleSort = (key: SortKey) => {
     if (key === sortKey) setDescending((value) => !value);
@@ -104,8 +123,17 @@ export function Universe() {
           <p className="text-sm text-text-muted">
             {isLoading
               ? "loading…"
-              : `${items.filter((i) => i.kind === "row").length} of ${rows.length} securities`}
+              : `showing ${items.filter((i) => i.kind === "row").length} of ${rows.length} companies`}
           </p>
+        </div>
+
+        <div className="mt-2 max-w-3xl">
+        <PagePurpose
+          id="universe"
+          title="Universe"
+          what="Every company Prism tracks, each scored six different ways — how cheap it is, how fast it is growing, how good the business is, how the share price is behaving, and so on. Each score runs 0 to 100 and compares the company with others in its own industry."
+          firstStep="clicking any company to investigate it. Or sort by 'Disagreement' — that finds companies where the six views contradict each other, which is usually where something interesting is going on."
+        />
         </div>
 
         {data && <StalenessBanner asOf={data.as_of} staleDays={data.stale_days} />}
@@ -218,7 +246,7 @@ export function Universe() {
           onClick={() => toggleSort("ticker")}
           className="w-56 shrink-0 text-left hover:text-text"
         >
-          Security {sortKey === "ticker" && (descending ? "▾" : "▴")}
+          Company {sortKey === "ticker" && (descending ? "▾" : "▴")}
         </button>
         {LENSES.map((lens) => (
           <button
@@ -235,15 +263,15 @@ export function Universe() {
           onClick={() => toggleSort("dispersion")}
           className="w-28 shrink-0 text-right hover:text-text"
         >
-          Disp {sortKey === "dispersion" && (descending ? "▾" : "▴")}
+          Disagreement {sortKey === "dispersion" && (descending ? "▾" : "▴")}
         </button>
         <button
           type="button"
           hidden={!showEarnings}
           onClick={() => toggleSort("earnings")}
-          className="hidden w-14 text-right font-mono text-[10px] uppercase tracking-wider text-muted md:block"
+          className="hidden w-14 text-right text-[10px] uppercase tracking-wide text-text-muted md:block"
         >
-          Earn {sortKey === "earnings" && (descending ? "▾" : "▴")}
+          Days to results {sortKey === "earnings" && (descending ? "▾" : "▴")}
         </button>
       </div>
 

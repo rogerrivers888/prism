@@ -12,6 +12,9 @@ import {
   type SweepResult,
 } from "../api/backtest";
 import { useGlossary } from "../components/GlossaryProvider";
+import { PagePurpose } from "../components/PagePurpose";
+import { useRegisterScreen } from "../components/ScreenContext";
+import { explainDrawdown, explainEdge, explainExpectancy, explainPerTrade, explainWinRate } from "../lib/explain";
 
 /** Caveats render above the numbers, not below them.
  *
@@ -84,7 +87,7 @@ function Stat({
     <div className="border border-border bg-surface-2 px-3 py-2">
       <div className="font-mono text-[10px] uppercase tracking-wider text-muted">{label}</div>
       <div className="mt-1 font-mono text-lg tabular-nums text-fg">{value}</div>
-      {hint ? <div className="mt-0.5 text-xs text-muted">{hint}</div> : null}
+      {hint ? <p className="mt-1 text-xs leading-relaxed text-muted">{hint}</p> : null}
     </div>
   );
 }
@@ -187,6 +190,9 @@ function Results({ result }: { result: BacktestResult }) {
           <span className="font-mono text-3xl tabular-nums text-fg">{pct(excess)}</span>
           <span className="text-sm text-muted">per trade</span>
         </div>
+        <p className="mt-2 text-sm leading-relaxed text-muted">
+          {explainEdge(excess, overall.trades)}
+        </p>
         {sig ? (
           <p className="mt-2 text-sm text-muted">
             90% bootstrap band {pct(sig.p5)} to {pct(sig.p95)}.{" "}
@@ -200,32 +206,51 @@ function Results({ result }: { result: BacktestResult }) {
         ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <Stat label="Trades" value={overall.trades.toLocaleString()} />
+      <div className="grid gap-3 md:grid-cols-2">
         <Stat
-          label="Mean net"
+          label="Trades tested"
+          value={overall.trades.toLocaleString()}
+          hint={`Each one bought and sold on real historical prices.`}
+        />
+        <Stat
+          label="Average trade"
           value={pct(overall.mean_return_pct)}
-          hint={`gross ${pct(overall.mean_gross_return_pct)}, costs ${overall.cost_drag_pct.toFixed(3)}%`}
+          hint={`${explainPerTrade(overall.mean_return_pct)}. Buying and selling cost ${overall.cost_drag_pct.toFixed(2)}% of that.`}
         />
-        <Stat label="Median net" value={pct(overall.median_return_pct)} />
-        <Stat label="Win rate" value={`${(overall.win_rate * 100).toFixed(1)}%`} />
-        <Stat label="Expectancy (R)" value={overall.expectancy_r.toFixed(4)} />
-        <Stat label="Std dev" value={`${overall.stdev_pct.toFixed(2)}%`} />
         <Stat
-          label="Max drawdown"
+          label="How often it won"
+          value={`${(overall.win_rate * 100).toFixed(1)}%`}
+          hint={`It ${explainWinRate(overall.win_rate)} — close to a coin toss means the size of the wins matters more than how often they come.`}
+        />
+        <Stat
+          label="Expectancy"
+          value={`${overall.expectancy_r.toFixed(3)}R`}
+          hint={`In plain English: ${explainExpectancy(overall.expectancy_r)}.`}
+        />
+        <Stat
+          label="Worst fall"
           value={`${overall.max_drawdown_pct.toFixed(1)}%`}
-          hint="sequence sketch, not a portfolio"
+          hint={`A rough sketch: ${explainDrawdown(overall.max_drawdown_pct)}. It strings trades together rather than modelling a real portfolio.`}
         />
         <Stat
-          label="Drift control"
+          label="Doing nothing clever"
           value={pct(drift?.mean_return_pct)}
-          hint={drift ? `${drift.samples.toLocaleString()} random holds` : undefined}
+          hint={
+            drift
+              ? `Buying the same shares on ${drift.samples.toLocaleString()} random days for the same length of time returned this much. Anything the strategy earns above this is the only part that came from the earnings timing.`
+              : undefined
+          }
         />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <div>
-          <h3 className="mb-2 text-sm font-medium text-fg">Distribution of trade returns</h3>
+          <h3 className="mb-1 text-sm font-medium text-fg">The spread of individual trades</h3>
+          <p className="mb-2 text-xs leading-relaxed text-muted">
+            The average hides this. p5 means one trade in twenty did worse than that
+            figure; p95 means one in twenty did better. A tiny average sitting inside a
+            wide spread is not something you can size a position against.
+          </p>
           <Distribution distribution={overall.distribution} />
           <p className="mt-2 text-xs text-muted">
             Mean holding period {overall.mean_holding_days} days.{" "}
@@ -488,6 +513,17 @@ export default function Backtest() {
   const sweep = useRunSweep();
   const segments = useRunSegments();
 
+  useRegisterScreen(
+    "Backtest laboratory",
+    { ran: Boolean(run.data), verdict: run.data?.plain_verdict?.headline,
+      settings: params },
+    [
+      "What is this page trying to find out?",
+      "Explain the result in the simplest terms possible",
+      "Why does beating 'doing nothing clever' matter more than the raw return?",
+    ],
+  );
+
   const set = (key: keyof Params) => (value: string) =>
     setParams((previous) => ({
       ...previous,
@@ -500,7 +536,15 @@ export default function Backtest() {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <header>
         <h1 className="font-display text-2xl uppercase tracking-wide text-fg">Backtest</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted">
+        <div className="mt-3 max-w-3xl">
+          <PagePurpose
+            id="backtest"
+            title="Backtest"
+            what="A laboratory for one specific question: does buying shares just before a company reports its results actually make money? It replays the idea across fifteen years of real prices and compares it with doing nothing clever."
+            firstStep="pressing 'Run backtest' with the settings as they are. It takes a minute or two. Then read the plain-English verdict at the top — the tables underneath are for checking the reasoning, not for reaching it."
+          />
+        </div>
+        <p className="mt-3 max-w-2xl text-sm text-muted">
           Buy a fixed number of days before a company is <em>expected</em> to report, sell before it
           does, never hold through the announcement. The entry uses the report date as it was
           forecastable at the time from prior reporting history — not the date that actually

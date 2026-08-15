@@ -1,19 +1,30 @@
 import { useState } from "react";
 import { PRINCIPLES } from "../content/principles";
 import { useGlossary } from "../components/GlossaryProvider";
+import { PagePurpose } from "../components/PagePurpose";
+import { useRegisterScreen } from "../components/ScreenContext";
 
 export default function Principles() {
   const { prose } = useGlossary();
   const [open, setOpen] = useState<string>(PRINCIPLES[0].slug);
 
+  useRegisterScreen("Principles", { reading: open }, [
+    "Summarise this page for someone with no finance background",
+    "What is the single most important idea here?",
+  ]);
+
   return (
     <div className="mx-auto max-w-3xl p-6">
       <header>
         <h1 className="font-display text-2xl uppercase tracking-wide">Principles</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          What Prism has settled on and why, written down so the reasoning survives.
-          About ten minutes to reread the whole thing.
-        </p>
+        <div className="mt-3 max-w-3xl">
+          <PagePurpose
+            id="principles"
+            title="Principles"
+            what="Why Prism works the way it does, in four short pieces. Most of it is about why investing ideas that look good usually are not, which is the single most useful thing here."
+            firstStep="reading 'Why we test the way we do'. It ends with a real example: an idea that looked profitable until it was compared with doing nothing, and then wasn't."
+          />
+        </div>
       </header>
 
       <nav className="mt-4 flex flex-wrap gap-1.5">

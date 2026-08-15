@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { req, useBook } from "../api/screens";
-import { EmptyState } from "../components/EmptyState";
+import { NothingYet, PagePurpose } from "../components/PagePurpose";
+import { useRegisterScreen } from "../components/ScreenContext";
 
 const SLEEVES = {
   high_growth: {
@@ -29,19 +30,44 @@ export function Book() {
   const notional = data?.total_notional ?? 0;
   const committed = typeof capital === "number" ? capital : null;
 
+  useRegisterScreen(
+    "Book — real positions",
+    { positions: positions.length, total_notional: notional,
+      total_risk: data?.total_risk, clusters: data?.clusters?.length ?? 0 },
+    [
+      "What is this page for and what should I put in it?",
+      "What does 'risk' mean here — is it how much I could lose?",
+      "Why does it group my positions into clusters?",
+    ],
+  );
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
         <h1 className="font-display text-3xl font-semibold tracking-tight">Book</h1>
 
+        <div className="mt-3 max-w-3xl">
+          <PagePurpose
+            id="book"
+            title="Book"
+            what="Your real portfolio — the shares you actually own, with real money. This is the only page in Prism about your own money; everything else is research or pretend trading."
+            firstStep="recording something you already hold, using the form at the bottom. Include the price you would sell at, because that is what lets Prism show how much you genuinely have at risk rather than just how much you have invested."
+          />
+        </div>
+
         {isLoading ? (
           <p className="mt-3 text-sm text-text-muted">Loading positions…</p>
         ) : positions.length === 0 ? (
           <div className="mt-4 space-y-4">
-            <EmptyState title="No open positions">
-              <p>Positions appear here once trades are recorded. Every position is derived from the event log, so nothing here is typed twice.</p>
-              <p>Use the form below to record your first trade — it writes a TradeExecuted event, the same path the broker import will use later.</p>
-            </EmptyState>
+            <NothingYet
+              headline="Nothing here yet — log your first position"
+              because="This page is empty because you have not recorded anything you own. It is not broken and there is nothing to load: Prism has no connection to your broker, so it only knows what you tell it."
+              action={{
+                label: "Use the form below to record a holding",
+                onClick: () =>
+                  document.getElementById("record-trade")?.scrollIntoView({ behavior: "smooth" }),
+              }}
+            />
           </div>
         ) : (
           <>
@@ -147,7 +173,7 @@ export function Book() {
               </div>
             ))}
           </div>
-          <form className="mt-3 grid gap-2 sm:grid-cols-3" onSubmit={async (e) => {
+          <form id="record-trade" className="mt-3 grid gap-2 sm:grid-cols-3" onSubmit={async (e) => {
             e.preventDefault();
             if (!form.instrument || !form.quantity || !form.price) return;
             await req("/book/trades", { method: "POST", body: JSON.stringify({

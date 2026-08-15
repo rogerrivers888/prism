@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { req, useDecisions, type DecisionOut } from "../api/screens";
-import { EmptyState, SampleSize } from "../components/EmptyState";
+import { SampleSize } from "../components/EmptyState";
+import { NothingYet, PagePurpose } from "../components/PagePurpose";
+import { useRegisterScreen } from "../components/ScreenContext";
 
 const ERROR_TAGS = ["analytical", "informational", "behavioural", "sizing", "timing", "none"] as const;
 
@@ -12,6 +14,17 @@ export function Decisions() {
   const [form, setForm] = useState({ ticker: "", kind: "buy", thesis: "", premortem: "", falsifier: "", sizing_note: "" });
 
   const decisions = data ?? [];
+
+  useRegisterScreen(
+    "Decisions — the written record",
+    { decisions: decisions.length,
+      open: decisions.filter((d) => d.status !== "closed").length },
+    [
+      "Why should I write these down before I act?",
+      "What is a pre-mortem and how do I write a good one?",
+      "What is the difference between a good decision and a good outcome?",
+    ],
+  );
   const closed = decisions.filter((d) => d.status === "closed");
   const refresh = () => client.invalidateQueries({ queryKey: ["decisions"] });
 
@@ -31,6 +44,15 @@ export function Decisions() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
         <h1 className="font-display text-3xl font-semibold tracking-tight">Decisions</h1>
+
+        <div className="mt-3 max-w-3xl">
+          <PagePurpose
+            id="decisions"
+            title="Decisions"
+            what="A written record of why you did things, made before you know how they turned out. Each entry needs what you believe, what would prove you wrong, and how it could fail."
+            firstStep="writing one for something you are considering right now. Months later this is the only way to tell a good decision that had a bad outcome from a bad decision that got lucky — and those need opposite responses."
+          />
+        </div>
         <p className="text-sm text-text-muted">
           One continuous record: raised, taken, declined, closed. Entry requires a
           thesis, a pre-mortem and a falsifier, because a decision you can't state a
@@ -73,7 +95,7 @@ export function Decisions() {
 
         <section className="mt-6">
           <h2 className="font-display text-lg font-semibold">Raise a decision</h2>
-          <form className="mt-2 space-y-2" onSubmit={async (e) => {
+          <form id="raise-decision" className="mt-2 space-y-2" onSubmit={async (e) => {
             e.preventDefault();
             if (!form.thesis.trim() || !form.premortem.trim() || !form.falsifier.trim()) return;
             await req("/decisions", { method: "POST", body: JSON.stringify({ ...form, ticker: form.ticker || null }) });
@@ -107,10 +129,15 @@ export function Decisions() {
             <p className="mt-2 text-sm text-text-muted">Loading…</p>
           ) : decisions.length === 0 ? (
             <div className="mt-2">
-              <EmptyState title="No decisions recorded">
-                <p>Every suggestion raised, action taken, and candidate declined goes here — including the ones you passed on, which are the hardest to learn from later if they aren't written down.</p>
-                <p>Closing a decision requires tagging what went wrong: analytical, informational, behavioural, sizing or timing.</p>
-              </EmptyState>
+              <NothingYet
+                headline="Nothing here yet — write down your first decision"
+                because="This page is empty because you have not recorded a decision. Its whole purpose is that you write down what you believe BEFORE you find out whether you were right — afterwards, memory quietly rewrites itself to match the outcome."
+                action={{
+                  label: "Write your first one using the form above",
+                  onClick: () =>
+                    document.getElementById("raise-decision")?.scrollIntoView({ behavior: "smooth" }),
+                }}
+              />
             </div>
           ) : (
             <div className="mt-2 space-y-2">

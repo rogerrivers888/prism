@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { NothingYet, PagePurpose } from "../components/PagePurpose";
+import { useRegisterScreen } from "../components/ScreenContext";
+import { markDone } from "../lib/progress";
 import { useNavigate } from "react-router-dom";
 import { LENSES, useUniverse, type UniverseRow } from "../api/universe";
 import { useWatchlist, useWatchToggle } from "../api/screens";
@@ -54,6 +57,29 @@ export function Screener() {
     });
   }, [rows, sectors, capRange, earningsRange, lensRanges, absolute, excluded]);
 
+  const filtersActive =
+    sectors.size > 0 || excluded.size > 0 ||
+    capRange.min !== null || capRange.max !== null ||
+    earningsRange.min !== null || earningsRange.max !== null ||
+    Object.values(lensRanges).some((r) => r.min !== null || r.max !== null);
+
+  // Side effect, not render: ticking the checklist during render would fire on
+  // every keystroke and violates React's rules besides.
+  useEffect(() => {
+    if (filtersActive) markDone("ran_screen");
+  }, [filtersActive]);
+
+  useRegisterScreen(
+    "Screener",
+    { matching: results.length, of: rows.length, filters_in_use: filtersActive,
+      scores_shown: absolute ? "absolute" : "relative to industry" },
+    [
+      "How do I use this page to build a shortlist?",
+      "What is a sensible first filter to try?",
+      "Why do relative and absolute give different answers?",
+    ],
+  );
+
   const setRange = (lens: string, key: "min" | "max", raw: string) =>
     setLensRanges((current) => ({
       ...current,
@@ -67,15 +93,26 @@ export function Screener() {
           <h1 className="font-display text-3xl font-semibold tracking-tight">Screener</h1>
           {/* Live count, so the effect of a filter is visible as it's typed. */}
           <p className="text-sm text-text-muted">
-            <span className="tabular">{results.length}</span> of {rows.length} match
-            {excluded.size > 0 && ` · ${excluded.size} excluded by hand`}
+            <span className="tabular">{results.length}</span> of {rows.length} companies match
+            {excluded.size > 0 && ` · ${excluded.size} you removed by hand`}
           </p>
           <div className="ml-auto flex overflow-hidden rounded-md border border-border">
             <button type="button" onClick={() => setAbsolute(false)} aria-pressed={!absolute}
-              className={`px-3 py-1 text-xs ${!absolute ? "bg-surface-sunken font-medium" : "text-text-muted"}`}>Relative</button>
+              className={`px-3 py-1 text-xs ${!absolute ? "bg-surface-sunken font-medium" : "text-text-muted"}`}
+              title="Score each company against others in its own industry">vs its industry</button>
             <button type="button" onClick={() => setAbsolute(true)} aria-pressed={absolute}
-              className={`px-3 py-1 text-xs ${absolute ? "bg-surface-sunken font-medium" : "text-text-muted"}`}>Absolute</button>
+              className={`px-3 py-1 text-xs ${absolute ? "bg-surface-sunken font-medium" : "text-text-muted"}`}
+              title="Score each company against fixed standards that do not move">vs fixed standards</button>
           </div>
+        </div>
+
+        <div className="mt-3 max-w-3xl">
+          <PagePurpose
+            id="screener"
+            title="Screener"
+            what="A way of going from hundreds of companies to a shortlist. Set the minimum and maximum score you will accept on any of the six measures, and only the companies that match stay on screen."
+            firstStep="typing 60 in the 'min' box next to quality, and 50 next to value. That asks for decent businesses at sane prices — about the simplest useful screen there is. Then click a company to look into it."
+          />
         </div>
 
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -101,7 +138,7 @@ export function Screener() {
           </label>
 
           <label className="flex items-center gap-1 text-xs">
-            <span className="w-16 shrink-0 text-text-muted">earn days</span>
+            <span className="w-16 shrink-0 text-text-muted" title="Days until the company next reports its results">days to results</span>
             <input type="number" placeholder="min" aria-label="days to earnings minimum"
               onChange={(e) => setEarningsRange((c) => ({ ...c, min: e.target.value === "" ? null : Number(e.target.value) }))}
               className="tabular h-7 w-full rounded border border-border bg-surface-raised px-1" />
@@ -123,6 +160,14 @@ export function Screener() {
       </div>
 
       <div className="flex-1 overflow-auto">
+        {rows.length > 0 && results.length === 0 && (
+          <div className="p-6">
+            <NothingYet
+              headline="No companies match what you asked for"
+              because="The filters are too tight — nothing scores that well on everything at once. Try relaxing whichever minimum you set highest; asking for top marks on several measures at the same time usually returns nothing."
+            />
+          </div>
+        )}
         {results.slice(0, 200).map((row: UniverseRow) => (
           <div key={row.ticker} className="flex items-center gap-3 border-b border-border px-4 py-2 sm:px-6">
             <button type="button" onClick={() => navigate(`/company/${row.ticker}`)}
