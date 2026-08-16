@@ -219,6 +219,21 @@ async def run(session, provider: MarketDataProvider, run_date: date) -> runs.Run
     await session.commit()
     tally.notes.append(f"projection applied {applied} events")
 
+    # IG: observe the real book. Fenced like the paper run — a broker outage
+    # must not unwind scores already committed above.
+    try:
+        from app.ig.jobs import run_nightly as ig_nightly
+
+        ig_report = await ig_nightly(session, run_date)
+        await session.commit()
+        tally.notes.append(f"ig: {ig_report.as_dict()}")
+        if ig_report.errors:
+            logger.warning("ig sync reported errors: %s", ig_report.errors)
+    except Exception as exc:  # noqa: BLE001
+        await session.rollback()
+        tally.notes.append(f"ig sync FAILED: {type(exc).__name__}: {exc}")
+        logger.exception("ig sync failed")
+
     # Strategy machine: fill yesterday's paper orders at today's open, signal
     # tomorrow's from tonight's data. Runs after scoring so tonight's lens
     # scores exist for tonight's signals. A failure here must not unwind the

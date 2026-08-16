@@ -685,6 +685,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ig/book": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Book
+         * @description Everything IG knows, split by account and never totalled across them.
+         */
+        get: operations["book_ig_book_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ig/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reconciliation
+         * @description What the first sync proposes. Nothing here has been applied.
+         */
+        get: operations["reconciliation_ig_reconciliation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ig/reconciliation/{row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve */
+        post: operations["resolve_ig_reconciliation__row_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ig/accounts/{account_id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Label Account */
+        post: operations["label_account_ig_accounts__account_id__label_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ig/unmapped": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unmapped */
+        get: operations["unmapped_ig_unmapped_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ig/unmapped/{epic}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Map Epic */
+        post: operations["map_epic_ig_unmapped__epic__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/strategies": {
         parameters: {
             query?: never;
@@ -1071,6 +1179,45 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountBook */
+        AccountBook: {
+            account: components["schemas"]["AccountOut"];
+            /** Positions */
+            positions: components["schemas"]["app__ig_router__PositionOut"][];
+            /** Options */
+            options: components["schemas"]["OptionOut"][];
+            /** Total Notional */
+            total_notional: number;
+            /** Margin Used */
+            margin_used: number | null;
+            /** Exposure To Margin */
+            exposure_to_margin: number | null;
+            /** Funding Paid This Year */
+            funding_paid_this_year: number | null;
+            /** Cost Of Ownership Note */
+            cost_of_ownership_note: string;
+        };
+        /** AccountOut */
+        AccountOut: {
+            /** Account Id */
+            account_id: string;
+            /** Type */
+            type: string;
+            /** Regime */
+            regime: string;
+            /** Label */
+            label: string | null;
+            /** Currency */
+            currency: string | null;
+            /** Balance */
+            balance: number | null;
+            /** Margin Used */
+            margin_used: number | null;
+            /** Available */
+            available: number | null;
+            /** Profit Loss */
+            profit_loss: number | null;
+        };
         /** AddSecurityIn */
         AddSecurityIn: {
             /** Tickers */
@@ -1157,21 +1304,6 @@ export interface components {
                 number,
                 number
             ][];
-        };
-        /** BookOut */
-        BookOut: {
-            /** Positions */
-            positions: components["schemas"]["app__screens_router__PositionOut"][];
-            /** Committed Capital */
-            committed_capital: number | null;
-            /** Total Notional */
-            total_notional: number;
-            /** Total Risk */
-            total_risk: number;
-            /** Clusters */
-            clusters: {
-                [key: string]: unknown;
-            }[];
         };
         /** ClipIn */
         ClipIn: {
@@ -1471,6 +1603,13 @@ export interface components {
             /** Stalled */
             stalled: boolean;
         };
+        /** LabelRequest */
+        LabelRequest: {
+            /** Label */
+            label: string;
+            /** Regime */
+            regime?: string | null;
+        };
         /** LensCell */
         LensCell: {
             /** Score */
@@ -1569,6 +1708,13 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** MapRequest */
+        MapRequest: {
+            /** Ticker */
+            ticker?: string | null;
+            /** Underlying Ticker */
+            underlying_ticker?: string | null;
+        };
         /** MetricSeries */
         MetricSeries: {
             /** Metric */
@@ -1587,6 +1733,70 @@ export interface components {
         NoteIn: {
             /** Note */
             note: string;
+        };
+        /** OptionOut */
+        OptionOut: {
+            /** Deal Id */
+            deal_id: string;
+            /** Underlying */
+            underlying: string | null;
+            /** Right */
+            right: string;
+            /** Strike */
+            strike: number;
+            /**
+             * Expiry
+             * Format: date
+             */
+            expiry: string;
+            /** Days Left */
+            days_left: number;
+            /** Contracts */
+            contracts: number;
+            /** Multiplier */
+            multiplier: number;
+            /** Direction */
+            direction: string;
+            /** Currency */
+            currency: string;
+            /** Mark */
+            mark: number | null;
+            /** Spot */
+            spot: number | null;
+            /** Position Value */
+            position_value: number | null;
+            /** Premium Paid */
+            premium_paid: number | null;
+            /** Breakeven Line */
+            breakeven_line: string;
+            /** Decay Line */
+            decay_line: string;
+            /** Leverage Line */
+            leverage_line: string;
+            /** Max Loss Line */
+            max_loss_line: string;
+            /** Probability Line */
+            probability_line: string;
+            /** Earnings Warning */
+            earnings_warning: string | null;
+            /** Breakeven Price */
+            breakeven_price: number | null;
+            /** Move Required Pct */
+            move_required_pct: number | null;
+            /** Theta Per Day */
+            theta_per_day: number | null;
+            /** Exposure */
+            exposure: number | null;
+            /** Delta */
+            delta: number | null;
+            /** Implied Volatility */
+            implied_volatility: number | null;
+            /** Iv Estimated */
+            iv_estimated: boolean;
+            /** Probability */
+            probability: number | null;
+            /** Warnings */
+            warnings: string[];
         };
         /** PeerRow */
         PeerRow: {
@@ -1738,6 +1948,13 @@ export interface components {
         PromoteRequest: {
             /** Stage */
             stage: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** ResolveRequest */
+        ResolveRequest: {
+            /** Accept */
+            accept: boolean;
             /** Note */
             note?: string | null;
         };
@@ -2096,6 +2313,61 @@ export interface components {
             /** Note */
             note: string | null;
         };
+        /** BookOut */
+        app__ig_router__BookOut: {
+            /** Accounts */
+            accounts: components["schemas"]["AccountBook"][];
+            /** Blended Total Note */
+            blended_total_note: string;
+            /** Unmapped Epics */
+            unmapped_epics: number;
+            /** Pending Reconciliation */
+            pending_reconciliation: number;
+            /** Last Sync */
+            last_sync: string | null;
+        };
+        /** PositionOut */
+        app__ig_router__PositionOut: {
+            /** Deal Id */
+            deal_id: string;
+            /** Epic */
+            epic: string;
+            /** Ticker */
+            ticker: string | null;
+            /** Name */
+            name: string | null;
+            /** Kind */
+            kind: string;
+            /** Direction */
+            direction: string;
+            /** Size */
+            size: number;
+            /** Open Level */
+            open_level: number | null;
+            /** Current Level */
+            current_level: number | null;
+            /** Currency */
+            currency: string | null;
+            /** Stop Level */
+            stop_level: number | null;
+            /** Notional */
+            notional: number | null;
+            /** Opened At */
+            opened_at: string | null;
+            /** Needs Mapping */
+            needs_mapping: boolean;
+            /** Funding Paid To Date */
+            funding_paid_to_date?: number | null;
+            /** Funding Per Month */
+            funding_per_month?: number | null;
+            /** Funding Projected */
+            funding_projected?: number | null;
+            /**
+             * Funding Is Estimate
+             * @default true
+             */
+            funding_is_estimate: boolean;
+        };
         /** PositionOut */
         app__projections__router__PositionOut: {
             /**
@@ -2132,6 +2404,21 @@ export interface components {
             status: string;
             /** Last Event Id */
             last_event_id: number;
+        };
+        /** BookOut */
+        app__screens_router__BookOut: {
+            /** Positions */
+            positions: components["schemas"]["app__screens_router__PositionOut"][];
+            /** Committed Capital */
+            committed_capital: number | null;
+            /** Total Notional */
+            total_notional: number;
+            /** Total Risk */
+            total_risk: number;
+            /** Clusters */
+            clusters: {
+                [key: string]: unknown;
+            }[];
         };
         /** PositionOut */
         app__screens_router__PositionOut: {
@@ -2957,7 +3244,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BookOut"];
+                    "application/json": components["schemas"]["app__screens_router__BookOut"];
                 };
             };
             /** @description Validation Error */
@@ -3518,6 +3805,192 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    book_ig_book_get: {
+        parameters: {
+            query?: {
+                horizon_days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__ig_router__BookOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconciliation_ig_reconciliation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    resolve_ig_reconciliation__row_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                row_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    label_account_ig_accounts__account_id__label_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unmapped_ig_unmapped_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+        };
+    };
+    map_epic_ig_unmapped__epic__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                epic: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

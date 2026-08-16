@@ -18,7 +18,7 @@ const read = (file: string) => readFileSync(join(ROUTES, file), "utf8");
 const EVERY_SCREEN = [
   "Universe.tsx", "Company.tsx", "Screener.tsx", "Research.tsx", "Book.tsx",
   "Decisions.tsx", "Strategies.tsx", "Backtest.tsx", "Glossary.tsx",
-  "Principles.tsx", "GettingStarted.tsx",
+  "Principles.tsx", "GettingStarted.tsx", "Reconciliation.tsx",
 ];
 
 describe("every screen explains itself", () => {

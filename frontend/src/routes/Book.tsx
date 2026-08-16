@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { req, useBook } from "../api/screens";
+import { IGAccounts } from "../components/IGAccounts";
 import { NothingYet, PagePurpose } from "../components/PagePurpose";
 import { useRegisterScreen } from "../components/ScreenContext";
 
@@ -50,10 +51,28 @@ export function Book() {
           <PagePurpose
             id="book"
             title="Book"
-            what="Your real portfolio — the shares you actually own, with real money. This is the only page in Prism about your own money; everything else is research or pretend trading."
-            firstStep="recording something you already hold, using the form at the bottom. Include the price you would sell at, because that is what lets Prism show how much you genuinely have at risk rather than just how much you have invested."
+            what="Your real money. Your IG accounts are read automatically and shown first, split by account because a pension and a leveraged spread bet account are different kinds of risk. Below that is anything you have logged by hand."
+            firstStep="reading the interest figures on the leveraged account. Interest is charged nightly on the FULL value of a position, not on what you put up, and over a three-month hold it is usually the number that decides whether the trade was worth doing."
           />
         </div>
+
+        <section className="mt-5">
+          <h2 className="font-display text-xl font-semibold">Your IG accounts</h2>
+          <p className="mt-1 max-w-2xl text-sm text-text-muted">
+            Read automatically from IG. Prism can only read — it cannot place, change or
+            close a trade, and has no ability to move money.
+          </p>
+          <div className="mt-3">
+            <IGAccounts />
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <h2 className="font-display text-xl font-semibold">Positions you logged by hand</h2>
+          <p className="mt-1 max-w-2xl text-sm text-text-muted">
+            Anything you recorded yourself, including holdings IG does not know about.
+          </p>
+        </section>
 
         {isLoading ? (
           <p className="mt-3 text-sm text-text-muted">Loading positions…</p>

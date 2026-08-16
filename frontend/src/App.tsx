@@ -3,6 +3,7 @@ import Backtest from "./routes/Backtest";
 import GettingStarted from "./routes/GettingStarted";
 import Glossary from "./routes/Glossary";
 import Principles from "./routes/Principles";
+import Reconciliation from "./routes/Reconciliation";
 import Strategies from "./routes/Strategies";
 import Strategy from "./routes/Strategy";
 import { GlossaryProvider } from "./components/GlossaryProvider";
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/strategies/:id" element={<Strategy />} />
               <Route path="/principles" element={<Principles />} />
               <Route path="/getting-started" element={<GettingStarted />} />
+              <Route path="/reconciliation" element={<Reconciliation />} />
               </Route>
             </Routes>
           </BrowserRouter>
