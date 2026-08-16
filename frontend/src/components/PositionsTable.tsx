@@ -27,11 +27,12 @@ const pl = (value: number | null | undefined, code = "GBP") => {
   return `${value >= 0 ? "+" : "−"}${money(Math.abs(value), code, 2).replace("−", "")}`;
 };
 
-type SortKey = "name" | "notional" | "at_risk" | "pl" | "expiry" | "opened";
+type SortKey =
+  | "name" | "notional" | "market_value" | "at_risk" | "pl" | "expiry" | "opened";
 
 function TotalsBar({ totals, label }: { totals: PositionTotals; label: string }) {
   return (
-    <div className="grid grid-cols-2 gap-3 rounded-md border border-border bg-surface-sunken p-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 rounded-md border border-border bg-surface-sunken p-3 sm:grid-cols-5">
       <div>
         <div className="text-[11px] uppercase tracking-wide text-text-muted">
           {label}
@@ -40,11 +41,24 @@ function TotalsBar({ totals, label }: { totals: PositionTotals; label: string })
       </div>
       <div>
         <div className="text-[11px] uppercase tracking-wide text-text-muted">
-          Total position value
+          Notional — what you control
         </div>
         <div className="tabular text-lg">{money(totals.notional)}</div>
         <p className="mt-0.5 text-[11px] leading-tight text-text-muted">
-          How much value moves with the market.
+          The full value of the shares behind these bets. An option controls
+          its whole notional for a fraction of the price.
+        </p>
+      </div>
+      <div>
+        <div className="text-[11px] uppercase tracking-wide text-text-muted">
+          What it is worth now
+        </div>
+        <div className="tabular text-lg">{money(totals.market_value)}</div>
+        <p className="mt-0.5 text-[11px] leading-tight text-text-muted">
+          What you would get back selling today
+          {totals.delta_exposure > 0 &&
+            ` · moves like ${money(totals.delta_exposure)} of stock`}
+          .
         </p>
       </div>
       <div>
@@ -71,6 +85,54 @@ function TotalsBar({ totals, label }: { totals: PositionTotals; label: string })
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/** How the closed trades actually went — the only honest scoreboard there is. */
+function ClosedSummary({ rows }: { rows: PositionRow[] }) {
+  const settled = rows.filter((r) => r.realised_pl !== null);
+  if (settled.length === 0) return null;
+
+  const wins = settled.filter((r) => (r.realised_pl ?? 0) > 0);
+  const losses = settled.filter((r) => (r.realised_pl ?? 0) <= 0);
+  const net = settled.reduce((sum, r) => sum + (r.realised_pl ?? 0), 0);
+  const averageWin = wins.length
+    ? wins.reduce((sum, r) => sum + (r.realised_pl ?? 0), 0) / wins.length
+    : 0;
+  const averageLoss = losses.length
+    ? losses.reduce((sum, r) => sum + (r.realised_pl ?? 0), 0) / losses.length
+    : 0;
+  const held = settled.filter((r) => r.days_held !== null);
+  const averageHold = held.length
+    ? Math.round(held.reduce((sum, r) => sum + (r.days_held ?? 0), 0) / held.length)
+    : null;
+
+  return (
+    <div className="rounded-md border border-border p-3 text-sm leading-relaxed">
+      <p>
+        <strong>{settled.length} closed trades.</strong> You made money on{" "}
+        {wins.length} and lost on {losses.length} — a win rate of{" "}
+        {Math.round((wins.length / settled.length) * 100)}%. Together they came to{" "}
+        <strong className={net >= 0 ? "text-positive" : "text-negative"}>
+          {pl(net)}
+        </strong>
+        .
+      </p>
+      <p className="mt-1 text-text-muted">
+        The average winner made {money(averageWin, "GBP", 2)} and the average loser
+        cost {money(Math.abs(averageLoss), "GBP", 2)}
+        {averageHold !== null && `, held for about ${averageHold} days`}.{" "}
+        {averageWin > Math.abs(averageLoss)
+          ? "Your winners are bigger than your losers, which is what lets a win rate near half still make money."
+          : "Your losers are bigger than your winners, so the win rate has to stay high for this to work."}
+      </p>
+      {settled.length < 30 && (
+        <p className="mt-1 text-xs text-text-muted">
+          {settled.length} trades is far too few to tell skill from luck. Treat this
+          as a record of what happened, not evidence about what will.
+        </p>
+      )}
     </div>
   );
 }
@@ -122,8 +184,18 @@ function Detail({ row, onClose }: { row: PositionRow; onClose: () => void }) {
             </h3>
             <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <div>
-                <dt className="text-xs text-text-muted">Position value</dt>
+                <dt className="text-xs text-text-muted">Notional — what you control</dt>
                 <dd className="tabular">{money(row.notional, row.currency ?? "GBP")}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-text-muted">Worth now</dt>
+                <dd className="tabular">{money(row.market_value, row.currency ?? "GBP")}</dd>
+                {row.delta_exposure !== null && row.kind === "option" && (
+                  <p className="mt-0.5 text-[11px] leading-tight text-text-muted">
+                    Currently moves like {money(row.delta_exposure, row.currency ?? "GBP")} of
+                    the shares.
+                  </p>
+                )}
               </div>
               <div>
                 <dt className="text-xs text-text-muted">Most you could lose</dt>
@@ -216,6 +288,7 @@ export function PositionsTable() {
       switch (sort) {
         case "name": return row.ticker ?? row.name;
         case "notional": return row.notional ?? 0;
+        case "market_value": return row.market_value ?? 0;
         case "at_risk": return row.at_risk ?? 0;
         case "pl": return (row.closed_at ? row.realised_pl : row.unrealised_pl) ?? 0;
         case "expiry": return row.days_to_expiry ?? 99999;
@@ -240,6 +313,8 @@ export function PositionsTable() {
     return {
       positions: rows.length,
       notional: rows.reduce((sum, r) => sum + (r.notional ?? 0), 0),
+      market_value: rows.reduce((sum, r) => sum + (r.market_value ?? 0), 0),
+      delta_exposure: rows.reduce((sum, r) => sum + (r.delta_exposure ?? 0), 0),
       at_risk: known.reduce((sum, r) => sum + (r.at_risk ?? 0), 0),
       at_risk_known: known.length,
       at_risk_unknown: rows.length - known.length,
@@ -357,6 +432,22 @@ export function PositionsTable() {
         label={tab === "open" ? "Open positions" : "Closed positions"}
       />
 
+      {tab === "closed" && rows.length > 0 && (
+        <ClosedSummary rows={rows} />
+      )}
+
+      {tab === "open" && Object.keys(data.totals_by_currency).length > 1 && (
+        <p className="rounded border border-border px-3 py-2 text-xs leading-relaxed text-text-muted">
+          These positions are in more than one currency and Prism has no
+          exchange-rate feed, so the totals above add pounds and dollars
+          together as if they were the same. Per currency:{" "}
+          {Object.entries(data.totals_by_currency)
+            .map(([code, t]) => `${money(t.notional, code)} notional in ${code}`)
+            .join(" · ")}
+          .
+        </p>
+      )}
+
       {rows.length === 0 ? (
         <p className="rounded border border-dashed border-border p-4 text-sm text-text-muted">
           Nothing matches those filters.
@@ -368,7 +459,8 @@ export function PositionsTable() {
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-text-muted">
                 {header("name", "Position")}
                 <th className="py-1 font-medium">Type</th>
-                {header("notional", "Value", "text-right")}
+                {header("notional", "Notional", "text-right")}
+                {header("market_value", "Worth now", "text-right")}
                 {header("at_risk", "Can lose", "text-right")}
                 {header("pl", tab === "open" ? "P/L now" : "P/L taken", "text-right")}
                 {header(tab === "open" ? "expiry" : "opened", tab === "open" ? "Expires" : "Closed", "text-right")}
@@ -403,8 +495,11 @@ export function PositionsTable() {
                     <td className="py-2 text-xs text-text-muted">
                       {row.kind === "option" ? "Option" : "Share bet"}
                     </td>
-                    <td className="tabular py-2 text-right">
+                    <td className="tabular py-2 text-right" title="Full value of the shares this controls">
                       {money(row.notional, row.currency ?? "GBP")}
+                    </td>
+                    <td className="tabular py-2 text-right text-text-muted">
+                      {money(row.market_value, row.currency ?? "GBP")}
                     </td>
                     <td
                       className={`tabular py-2 text-right ${uncapped ? "text-warning" : ""}`}

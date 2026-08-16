@@ -25,6 +25,7 @@ from app.ig.models import (
     FundingAccrual,
     IGAccount,
     IGBalance,
+    IGClosedTrade,
     IGEpicMap,
     IGPosition,
     IGReconciliation,
@@ -621,9 +622,19 @@ class PositionRow(BaseModel):
 
     open_level: float | None
     current_level: float | None
-    # What the position is worth in the market: the number that says how much
-    # is moving with the price.
+    # Three different sizes, because they answer three different questions and
+    # on a leveraged book they are wildly different numbers.
+    #
+    #   notional      — the FULL underlying value being controlled. For an
+    #                   option that is the share price times the shares the
+    #                   contract covers, not what the contract cost.
+    #   market_value  — what the position itself is currently worth.
+    #   delta_exposure— how much the position actually behaves like, right
+    #                   now. An out-of-the-money option controls its full
+    #                   notional but moves like a fraction of it.
     notional: float | None
+    market_value: float | None = None
+    delta_exposure: float | None = None
     # What can actually be lost. For a long option that is the premium; for a
     # stop-protected bet it is the distance to the stop; otherwise unbounded
     # by anything Prism knows, which is stated rather than guessed at.
@@ -649,6 +660,8 @@ class PositionRow(BaseModel):
 class PositionTotals(BaseModel):
     positions: int
     notional: float
+    market_value: float = 0.0
+    delta_exposure: float = 0.0
     at_risk: float
     at_risk_known: int
     at_risk_unknown: int
@@ -664,18 +677,27 @@ class PositionsOut(BaseModel):
     totals_open: PositionTotals
     totals_closed: PositionTotals
     by_account: dict[str, PositionTotals]
+    # Totals split by currency. Prism has no FX layer, so adding a dollar
+    # option to a sterling share bet would invent a number; the split is the
+    # honest form and the UI says why.
+    totals_by_currency: dict[str, PositionTotals]
     sectors: list[str]
     kinds: list[str]
 
 
 def _totals(rows: list[PositionRow]) -> PositionTotals:
-    known = [r for r in rows if r.at_risk is not None]
+    # Closed trades have nothing at stake, so they are excluded from the
+    # at-risk count rather than inflating the "no stop" warning.
+    live = [r for r in rows if r.closed_at is None]
+    known = [r for r in live if r.at_risk is not None]
     return PositionTotals(
         positions=len(rows),
         notional=round(sum(r.notional or 0 for r in rows), 2),
+        market_value=round(sum(r.market_value or 0 for r in rows), 2),
+        delta_exposure=round(sum(r.delta_exposure or 0 for r in rows), 2),
         at_risk=round(sum(r.at_risk or 0 for r in known), 2),
         at_risk_known=len(known),
-        at_risk_unknown=len(rows) - len(known),
+        at_risk_unknown=len(live) - len(known),
         unrealised_pl=round(sum(r.unrealised_pl or 0 for r in rows), 2),
         realised_pl=round(sum(r.realised_pl or 0 for r in rows), 2),
         funding_paid=round(sum(r.funding_paid or 0 for r in rows), 2),
@@ -767,6 +789,10 @@ async def positions(session: SessionDep) -> PositionsOut:
             realised_pl=unrealised if position.closed_at is not None else None,
             funding_paid=funding_paid or None,
         )
+        # For a share bet you control exactly what it is worth, so the two
+        # coincide and the delta is one by definition.
+        row.market_value = row.notional
+        row.delta_exposure = row.notional
 
         if contract is not None:
             mark_row = (
@@ -796,17 +822,62 @@ async def positions(session: SessionDep) -> PositionsOut:
             row.theta_per_day = view.theta_per_day_money
             row.probability = view.probability
             row.has_earnings_warning = view.earnings_warning is not None
-            # An option's market value is its own worth, not delta exposure.
-            row.notional = view.position_value or row.notional
+            # An option's three sizes genuinely differ: what it cost, the
+            # underlying it covers, and how much of that it currently tracks.
+            row.market_value = view.position_value
+            row.delta_exposure = view.exposure
+            shares = float(contract.contracts) * float(contract.multiplier)
+            row.notional = round(spot * abs(shares), 2) if spot else view.position_value
 
         (closed_rows if position.closed_at else open_rows).append(row)
+
+    # Historical trades from IG's transaction record. The positions feed only
+    # reports what is live, so without these the closed tab stays empty even
+    # though IG holds years of history.
+    history = list((await session.execute(select(IGClosedTrade))).scalars())
+    for trade in history:
+        account = accounts.get(trade.account_id)
+        size = float(trade.size) if trade.size is not None else None
+        open_level = float(trade.open_level) if trade.open_level is not None else None
+        close_level = float(trade.close_level) if trade.close_level is not None else None
+        notional = (
+            round(abs(open_level * size), 2) if open_level and size else None
+        )
+        closed_rows.append(PositionRow(
+            deal_id=f"hist:{trade.reference}",
+            account_id=trade.account_id,
+            account_label=account.label if account else None,
+            regime=account.regime if account else "leveraged",
+            kind=trade.kind, ticker=trade.ticker,
+            name=trade.instrument_name or trade.reference,
+            sector=sectors.get(trade.ticker) if trade.ticker else None,
+            direction=(trade.direction or "long").upper(),
+            size=size or 0.0, currency=trade.currency,
+            opened_at=trade.opened_at, closed_at=trade.closed_at,
+            days_held=trade.days_held,
+            open_level=open_level, current_level=close_level,
+            notional=notional, market_value=notional, delta_exposure=notional,
+            # A closed trade risked what it risked; there is nothing still at
+            # stake, so the question no longer applies.
+            at_risk=None, at_risk_basis="closed — nothing further at stake",
+            unrealised_pl=None,
+            realised_pl=float(trade.profit_loss) if trade.profit_loss is not None else None,
+            funding_paid=None,
+            right=trade.option_right,
+            strike=float(trade.option_strike) if trade.option_strike is not None else None,
+        ))
 
     by_account: dict[str, PositionTotals] = {}
     for account_id, account in accounts.items():
         subset = [r for r in open_rows if r.account_id == account_id]
         by_account[account.label or account_id] = _totals(subset)
 
+    currencies: dict[str, PositionTotals] = {}
+    for code in sorted({r.currency or "GBP" for r in open_rows}):
+        currencies[code] = _totals([r for r in open_rows if (r.currency or "GBP") == code])
+
     return PositionsOut(
+        totals_by_currency=currencies,
         open=sorted(open_rows, key=lambda r: -(r.notional or 0)),
         closed=sorted(closed_rows, key=lambda r: (r.closed_at or datetime.min.replace(tzinfo=timezone.utc)), reverse=True),
         totals_open=_totals(open_rows),

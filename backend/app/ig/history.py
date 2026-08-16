@@ -23,7 +23,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.events.store import append
 from app.ig.client import IGClient
-from app.ig.models import FundingAccrual, IGAccount, IGPosition, OptionPosition
+from app.ig.models import (
+    FundingAccrual,
+    IGAccount,
+    IGClosedTrade,
+    IGPosition,
+    OptionPosition,
+)
 from app.ingest import archive as archive_module
 
 logger = logging.getLogger(__name__)
@@ -61,6 +67,8 @@ class HistoryReport:
     interest_total: Decimal = Decimal(0)
     premiums_resolved: int = 0
     deals_linked: int = 0
+    closed_trades: int = 0
+    entry_levels_filled: int = 0
     errors: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
@@ -70,6 +78,8 @@ class HistoryReport:
             "interest_total": str(self.interest_total),
             "premiums_resolved": self.premiums_resolved,
             "deals_linked": self.deals_linked,
+            "closed_trades": self.closed_trades,
+            "entry_levels_filled": self.entry_levels_filled,
             "errors": self.errors,
         }
 
@@ -138,6 +148,12 @@ async def sync_history(
         )
         report.transactions += 1
 
+        # A DEAL with both an open and a close level is a completed trade.
+        # These are the only record of history: the positions feed reports
+        # what is live and nothing else.
+        if (entry.get("transactionType") or "").upper() == "DEAL":
+            await _record_closed_trade(session, account, entry, occurred, profit, report)
+
         # IG's own funding charge. Recorded against the account rather than a
         # deal, because IG aggregates interest per instrument per night and
         # does not attribute it to a dealId.
@@ -174,6 +190,63 @@ async def sync_history(
     await session.flush()
     # Returned so premiums can be resolved against IG's own dealId linkage.
     return activities.get("activities", [])
+
+
+async def _record_closed_trade(
+    session: AsyncSession, account: IGAccount, entry: dict,
+    closed_at: datetime, profit: Decimal | None, report: HistoryReport,
+) -> None:
+    """Project one historical trade, matching it to a ticker where possible."""
+    from app.ig.mapping import OPTION_NAME, strike_scale
+    from app.fundamentals import Security
+
+    open_level = parse_amount(entry.get("openLevel"))
+    close_level = parse_amount(entry.get("closeLevel"))
+    if open_level is None and close_level is None:
+        return
+
+    name = (entry.get("instrumentName") or "").strip()
+    currency = entry.get("currency")
+
+    # Options carry their right and strike in the name.
+    right = strike = None
+    match = OPTION_NAME.search(name)
+    if match:
+        strike = Decimal(match.group(1)) / Decimal(str(strike_scale(currency)))
+        right = match.group(2).lower()
+
+    # Only a ticker Prism actually holds; never a guess.
+    ticker = None
+    lead = name.split()[0].upper() if name else ""
+    if len(lead) >= 2:
+        found = (
+            await session.execute(select(Security.ticker).where(Security.ticker == lead))
+        ).scalar_one_or_none()
+        ticker = found
+
+    opened_at = _timestamp(entry.get("openDateUtc"))
+    days = (closed_at.date() - opened_at.date()).days if opened_at else None
+    size = parse_amount(entry.get("size"))
+
+    await session.execute(
+        pg_insert(IGClosedTrade)
+        .values(
+            reference=entry["reference"], account_id=account.account_id,
+            instrument_name=name or None, ticker=ticker,
+            kind="option" if right else "equity",
+            direction="long" if (size or Decimal(0)) >= 0 else "short",
+            size=abs(size) if size is not None else None,
+            open_level=open_level, close_level=close_level,
+            profit_loss=profit, currency=currency,
+            opened_at=opened_at, closed_at=closed_at, days_held=days,
+            option_right=right, option_strike=strike,
+        )
+        .on_conflict_do_update(
+            index_elements=["reference"],
+            set_={"profit_loss": profit, "close_level": close_level, "ticker": ticker},
+        )
+    )
+    report.closed_trades += 1
 
 
 async def resolve_premiums(
@@ -219,6 +292,15 @@ async def resolve_premiums(
                 amount = parse_amount(str(level))
                 if amount is not None:
                     levels[deal_id] = amount
+
+    # IG returns openLevel as null on the positions feed, so without this
+    # every open position shows no profit or loss at all. The activity feed
+    # has the real fill level, keyed on the deal.
+    for deal_id, level in levels.items():
+        position = await session.get(IGPosition, deal_id)
+        if position is not None and position.open_level is None:
+            position.open_level = level
+            report.entry_levels_filled += 1
 
     for option in options:
         level = levels.get(option.deal_id)

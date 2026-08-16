@@ -140,3 +140,26 @@ class IGReconciliation(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class IGClosedTrade(Base):
+    """A trade IG has already closed, from its transaction history."""
+
+    __tablename__ = "ig_closed_trades"
+
+    reference: Mapped[str] = mapped_column(Text, primary_key=True)
+    account_id: Mapped[str]
+    instrument_name: Mapped[str | None]
+    ticker: Mapped[str | None]
+    kind: Mapped[str] = mapped_column(Text, server_default="unknown")
+    direction: Mapped[str | None]
+    size: Mapped[Decimal | None] = mapped_column(Numeric)
+    open_level: Mapped[Decimal | None] = mapped_column(Numeric)
+    close_level: Mapped[Decimal | None] = mapped_column(Numeric)
+    profit_loss: Mapped[Decimal | None] = mapped_column(Numeric)
+    currency: Mapped[str | None]
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    days_held: Mapped[int | None]
+    option_right: Mapped[str | None]
+    option_strike: Mapped[Decimal | None] = mapped_column(Numeric)

@@ -140,6 +140,8 @@ export type PositionRow = {
   open_level: number | null;
   current_level: number | null;
   notional: number | null;
+  market_value: number | null;
+  delta_exposure: number | null;
   at_risk: number | null;
   at_risk_basis: string;
   unrealised_pl: number | null;
@@ -159,6 +161,8 @@ export type PositionRow = {
 export type PositionTotals = {
   positions: number;
   notional: number;
+  market_value: number;
+  delta_exposure: number;
   at_risk: number;
   at_risk_known: number;
   at_risk_unknown: number;
@@ -174,6 +178,7 @@ export type PositionsOut = {
   totals_open: PositionTotals;
   totals_closed: PositionTotals;
   by_account: Record<string, PositionTotals>;
+  totals_by_currency: Record<string, PositionTotals>;
   sectors: string[];
   kinds: string[];
 };

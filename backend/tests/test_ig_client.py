@@ -229,3 +229,27 @@ async def test_switching_to_the_already_active_account_is_not_an_error():
 
     client = make_client(handler)
     assert await client.positions("ABC1") == {"positions": []}
+
+
+@pytest.mark.asyncio
+async def test_an_expired_session_during_a_switch_recovers():
+    """The switch path had no 401 handling, so a session ageing out between
+    two account reads failed the whole sync."""
+    state = {"logins": 0, "switches": 0}
+
+    def handler(request):
+        if request.url.path.endswith("/session") and request.method == "POST":
+            state["logins"] += 1
+            return login_response(request)
+        if request.method == "PUT":
+            state["switches"] += 1
+            if state["switches"] == 1:
+                return httpx.Response(
+                    401, json={"errorCode": "error.security.account-token-invalid"}
+                )
+            return httpx.Response(200, json={})
+        return httpx.Response(200, json={"positions": []})
+
+    client = make_client(handler)
+    assert await client.positions("ACC1") == {"positions": []}
+    assert state["logins"] == 2, "should re-login once on an expired switch"

@@ -272,6 +272,19 @@ class IGClient:
                 headers=self._headers(version="1"),
                 json={"accountId": account_id},
             )
+            if response.status_code == 401:
+                # The session aged out between requests. Re-authenticate once
+                # and retry — the same bounded recovery the GET path has, which
+                # this was missing.
+                logger.info("ig session expired during account switch, re-authenticating")
+                self._session = None
+                self._active_account = None
+                await self.login()
+                response = await client.put(
+                    f"{self._base}/session",
+                    headers=self._headers(version="1"),
+                    json={"accountId": account_id},
+                )
             if response.status_code == 412 and "must-be-different" in response.text:
                 # Already on this account. IG treats that as an error; for our
                 # purposes it is the desired state, and the session's tokens
