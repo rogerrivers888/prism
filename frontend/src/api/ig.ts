@@ -156,6 +156,8 @@ export type PositionRow = {
   theta_per_day: number | null;
   probability: number | null;
   has_earnings_warning: boolean;
+  next_earnings: string | null;
+  days_to_earnings: number | null;
 };
 
 export type PositionTotals = {

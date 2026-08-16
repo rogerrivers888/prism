@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { usePositions, useIGBook, type PositionRow, type PositionTotals } from "../api/ig";
+import { LENSES, useUniverse, type LensName, type UniverseRow } from "../api/universe";
+import { LensStrip } from "./LensBar";
+import { DateRangePicker, withinRange, ALL_TIME, type Range } from "./DateRangePicker";
+import { Dropdown } from "./Dropdown";
 import { Drawer, DrawerStack } from "./Drawer";
 import { useGlossary } from "./GlossaryProvider";
 import { NothingYet } from "./PagePurpose";
@@ -28,7 +32,8 @@ const pl = (value: number | null | undefined, code = "GBP") => {
 };
 
 type SortKey =
-  | "name" | "notional" | "market_value" | "at_risk" | "pl" | "expiry" | "opened";
+  | "name" | "notional" | "market_value" | "at_risk" | "pl" | "expiry" | "opened"
+  | "earnings";
 
 function TotalsBar({ totals, label }: { totals: PositionTotals; label: string }) {
   return (
@@ -90,6 +95,186 @@ function TotalsBar({ totals, label }: { totals: PositionTotals; label: string })
 }
 
 /** How the closed trades actually went — the only honest scoreboard there is. */
+/** The book seen through Prism's research rather than through money.
+ *
+ *  Answers a question the money view cannot: are the things you own actually
+ *  any good by your own criteria? A large position on a company scoring badly
+ *  everywhere is worth noticing.
+ */
+function ResearchView({
+  rows,
+  lensFor,
+  onOpen,
+}: {
+  rows: PositionRow[];
+  lensFor: (ticker: string | null) => UniverseRow | undefined;
+  onOpen: (row: PositionRow) => void;
+}) {
+  const withScores = rows.filter((row) => lensFor(row.ticker));
+  const missing = rows.length - withScores.length;
+
+  return (
+    <div className="space-y-2">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[46rem] text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-text-muted">
+              <th className="py-1 font-medium">Position</th>
+              <th className="py-1 text-right font-medium">Notional</th>
+              {LENSES.map((lens) => (
+                <th key={lens} className="py-1 text-center font-medium capitalize">
+                  {lens}
+                </th>
+              ))}
+              <th className="py-1 text-right font-medium">Disagreement</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const scored = lensFor(row.ticker);
+              return (
+                <tr
+                  key={row.deal_id}
+                  onClick={() => onOpen(row)}
+                  className="cursor-pointer border-b border-border/50 hover:bg-surface-sunken"
+                >
+                  <td className="py-2">
+                    <span className="font-medium">{row.ticker ?? row.name}</span>
+                    {row.right && (
+                      <span className="ml-1 text-xs text-text-muted">
+                        {row.right} {row.strike}
+                      </span>
+                    )}
+                  </td>
+                  <td className="tabular py-2 text-right">
+                    {money(row.notional, row.currency ?? "GBP")}
+                  </td>
+                  {LENSES.map((lens) => {
+                    const cell = scored?.lenses[lens];
+                    const score = cell?.applicable ? cell.score : null;
+                    return (
+                      <td key={lens} className="tabular py-2 text-center">
+                        {score === null || score === undefined ? (
+                          <span className="text-text-muted/50">—</span>
+                        ) : (
+                          <span
+                            className={
+                              score >= 70
+                                ? "font-medium"
+                                : score <= 30
+                                  ? "text-text-muted"
+                                  : ""
+                            }
+                          >
+                            {score.toFixed(0)}
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td className="tabular py-2 text-right text-text-muted">
+                    {scored?.dispersion?.toFixed(0) ?? "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs leading-relaxed text-text-muted">
+        Each score runs 0–100 against others in the same industry, and none of them is
+        a buy or sell signal. Disagreement is the gap between the highest and lowest —
+        a big number means the six views contradict each other about something you own.
+        {missing > 0 &&
+          ` ${missing} position${missing === 1 ? " is" : "s are"} not linked to a company Prism tracks, so ${
+            missing === 1 ? "it has" : "they have"
+          } no scores.`}
+      </p>
+    </div>
+  );
+}
+
+/** Where the money actually is. Rectangles sized by notional, shaded by one
+ *  lens, so concentration and quality are visible at the same time. */
+function MapView({
+  rows,
+  lensFor,
+  onOpen,
+}: {
+  rows: PositionRow[];
+  lensFor: (ticker: string | null) => UniverseRow | undefined;
+  onOpen: (row: PositionRow) => void;
+}) {
+  const [lens, setLens] = useState<LensName>("quality");
+  const total = rows.reduce((sum, row) => sum + (row.notional ?? 0), 0);
+  if (total <= 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-text-muted">Shade by</span>
+        <Dropdown
+          label="Lens"
+          value={lens}
+          onChange={(value) => setLens(value as LensName)}
+          options={LENSES.map((value) => ({
+            value,
+            label: value.charAt(0).toUpperCase() + value.slice(1),
+          }))}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-1">
+        {rows.map((row) => {
+          const share = (row.notional ?? 0) / total;
+          const scored = lensFor(row.ticker);
+          const cell = scored?.lenses[lens];
+          const score = cell?.applicable ? cell.score : null;
+          return (
+            <button
+              key={row.deal_id}
+              type="button"
+              onClick={() => onOpen(row)}
+              title={`${row.ticker ?? row.name}: ${money(row.notional, row.currency ?? "GBP")} — ${
+                Math.round(share * 100)
+              }% of the book${score !== null && score !== undefined ? `, ${lens} ${score.toFixed(0)}` : ""}`}
+              style={{
+                flexGrow: Math.max(share * 100, 4),
+                flexBasis: `${Math.max(share * 100, 12)}%`,
+                minHeight: `${Math.max(share * 260, 56)}px`,
+                // Opacity carries the score; hue stays the lens's own identity
+                // so colour never becomes a verdict.
+                opacity: score === null || score === undefined ? 0.25 : 0.35 + (score / 100) * 0.65,
+              }}
+              className={`flex flex-col justify-between rounded border border-border p-2 text-left ${LENS_BG[lens]}`}
+            >
+              <span className="text-xs font-medium">{row.ticker ?? row.name.slice(0, 14)}</span>
+              <span className="tabular text-[11px]">
+                {money(row.notional, row.currency ?? "GBP")}
+                <span className="ml-1 opacity-70">{Math.round(share * 100)}%</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-xs leading-relaxed text-text-muted">
+        Box size is how much of your notional exposure each position represents. Stronger
+        shading means a higher {lens} score; a pale box is a large holding Prism rates
+        poorly, or one it cannot score at all.
+      </p>
+    </div>
+  );
+}
+
+const LENS_BG: Record<LensName, string> = {
+  trend: "bg-lens-trend",
+  growth: "bg-lens-growth",
+  quality: "bg-lens-quality",
+  value: "bg-lens-value",
+  momentum: "bg-lens-momentum",
+  cycle: "bg-lens-cycle",
+};
+
 function ClosedSummary({ rows }: { rows: PositionRow[] }) {
   const settled = rows.filter((r) => r.realised_pl !== null);
   if (settled.length === 0) return null;
@@ -260,10 +445,19 @@ function Detail({ row, onClose }: { row: PositionRow; onClose: () => void }) {
 
 export function PositionsTable() {
   const { data, isLoading, error } = usePositions();
+  const universe = useUniverse();
+  // Lens scores live in the universe payload, already cached for the other
+  // screens, so joining by ticker costs nothing extra.
+  const lensFor = useMemo(() => {
+    const index = new Map<string, UniverseRow>();
+    for (const row of universe.data?.rows ?? []) index.set(row.ticker, row);
+    return (ticker: string | null) => (ticker ? index.get(ticker) : undefined);
+  }, [universe.data]);
   const [tab, setTab] = useState<"open" | "closed">("open");
   const [sector, setSector] = useState<string>("all");
   const [kind, setKind] = useState<string>("all");
-  const [period, setPeriod] = useState<string>("all");
+  const [range, setRange] = useState<Range>(ALL_TIME);
+  const [view, setView] = useState<"money" | "research" | "map">("money");
   const [sort, setSort] = useState<SortKey>("notional");
   const [descending, setDescending] = useState(true);
   const [openRow, setOpenRow] = useState<PositionRow | null>(null);
@@ -271,17 +465,10 @@ export function PositionsTable() {
   const source = tab === "open" ? data?.open ?? [] : data?.closed ?? [];
 
   const rows = useMemo(() => {
-    const cutoff =
-      period === "all"
-        ? null
-        : new Date(Date.now() - Number(period) * 24 * 60 * 60 * 1000);
     const filtered = source.filter((row) => {
       if (sector !== "all" && row.sector !== sector) return false;
       if (kind !== "all" && row.kind !== kind) return false;
-      if (cutoff) {
-        const stamp = row.closed_at ?? row.opened_at;
-        if (!stamp || new Date(stamp) < cutoff) return false;
-      }
+      if (!withinRange(row.closed_at ?? row.opened_at, range)) return false;
       return true;
     });
     const value = (row: PositionRow): number | string => {
@@ -292,6 +479,7 @@ export function PositionsTable() {
         case "at_risk": return row.at_risk ?? 0;
         case "pl": return (row.closed_at ? row.realised_pl : row.unrealised_pl) ?? 0;
         case "expiry": return row.days_to_expiry ?? 99999;
+        case "earnings": return row.days_to_earnings ?? 99999;
         case "opened": return row.opened_at ? new Date(row.opened_at).getTime() : 0;
       }
     };
@@ -304,7 +492,7 @@ export function PositionsTable() {
       }
       return descending ? right - left : left - right;
     });
-  }, [source, sector, kind, period, sort, descending]);
+  }, [source, sector, kind, range, sort, descending]);
 
   // Totals follow the filters, so narrowing to one sector answers "how much
   // do I have in semiconductors" rather than leaving a stale headline.
@@ -372,53 +560,69 @@ export function PositionsTable() {
           ))}
         </div>
 
-        <select
+        {/* Same book, three ways of reading it. */}
+        <div className="flex overflow-hidden rounded-md border border-border">
+          {([
+            ["money", "Money"],
+            ["research", "Research"],
+            ["map", "Map"],
+          ] as const).map(([value, labelText]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setView(value)}
+              aria-pressed={view === value}
+              title={
+                value === "money"
+                  ? "Sizes, risk and profit"
+                  : value === "research"
+                    ? "How Prism scores what you own"
+                    : "Where your money is concentrated"
+              }
+              className={`px-3 py-1 text-xs ${
+                view === value ? "bg-surface-sunken font-medium" : "text-text-muted"
+              }`}
+            >
+              {labelText}
+            </button>
+          ))}
+        </div>
+
+        <Dropdown
+          label="Type"
           value={kind}
-          onChange={(event) => setKind(event.target.value)}
-          aria-label="Filter by type"
-          className="rounded border border-border bg-surface-raised px-2 py-1 text-xs"
-        >
-          <option value="all">All types</option>
-          {data.kinds.map((value) => (
-            <option key={value} value={value}>
-              {value === "option" ? "Options" : value === "equity" ? "Shares" : value}
-            </option>
-          ))}
-        </select>
+          onChange={setKind}
+          options={[
+            { value: "all", label: "All types" },
+            ...data.kinds.map((value) => ({
+              value,
+              label: value === "option" ? "Options" : value === "equity" ? "Shares" : value,
+            })),
+          ]}
+        />
 
-        <select
+        <Dropdown
+          label="Sector"
           value={sector}
-          onChange={(event) => setSector(event.target.value)}
-          aria-label="Filter by sector"
-          className="rounded border border-border bg-surface-raised px-2 py-1 text-xs"
-        >
-          <option value="all">All sectors</option>
-          {data.sectors.map((value) => (
-            <option key={value} value={value}>
-              {value.replace(/_/g, " ")}
-            </option>
-          ))}
-        </select>
+          onChange={setSector}
+          options={[
+            { value: "all", label: "All sectors" },
+            ...data.sectors.map((value) => ({
+              value,
+              label: value.replace(/_/g, " "),
+            })),
+          ]}
+        />
 
-        <select
-          value={period}
-          onChange={(event) => setPeriod(event.target.value)}
-          aria-label="Filter by period"
-          className="rounded border border-border bg-surface-raised px-2 py-1 text-xs"
-        >
-          <option value="all">Any time</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 3 months</option>
-          <option value="365">Last year</option>
-        </select>
+        <DateRangePicker value={range} onChange={setRange} label="Date range" />
 
-        {(kind !== "all" || sector !== "all" || period !== "all") && (
+        {(kind !== "all" || sector !== "all" || range.from || range.to) && (
           <button
             type="button"
             onClick={() => {
               setKind("all");
               setSector("all");
-              setPeriod("all");
+              setRange(ALL_TIME);
             }}
             className="text-xs text-text-muted underline"
           >
@@ -452,6 +656,10 @@ export function PositionsTable() {
         <p className="rounded border border-dashed border-border p-4 text-sm text-text-muted">
           Nothing matches those filters.
         </p>
+      ) : view === "research" ? (
+        <ResearchView rows={rows} lensFor={lensFor} onOpen={setOpenRow} />
+      ) : view === "map" ? (
+        <MapView rows={rows} lensFor={lensFor} onOpen={setOpenRow} />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[46rem] text-sm">
@@ -463,6 +671,7 @@ export function PositionsTable() {
                 {header("market_value", "Worth now", "text-right")}
                 {header("at_risk", "Can lose", "text-right")}
                 {header("pl", tab === "open" ? "P/L now" : "P/L taken", "text-right")}
+                {header("earnings", "Next results", "text-right")}
                 {header(tab === "open" ? "expiry" : "opened", tab === "open" ? "Expires" : "Closed", "text-right")}
               </tr>
             </thead>
@@ -491,6 +700,17 @@ export function PositionsTable() {
                       <span className="block text-[11px] text-text-muted">
                         {row.account_label} · {row.sector?.replace(/_/g, " ") ?? "unclassified"}
                       </span>
+                      {(() => {
+                        const scored = lensFor(row.ticker);
+                        return scored ? (
+                          <span
+                            className="mt-1 block max-w-32"
+                            title="How Prism scores this company across the six lenses"
+                          >
+                            <LensStrip lenses={scored.lenses} absolute={false} />
+                          </span>
+                        ) : null;
+                      })()}
                     </td>
                     <td className="py-2 text-xs text-text-muted">
                       {row.kind === "option" ? "Option" : "Share bet"}
@@ -513,6 +733,26 @@ export function PositionsTable() {
                       }`}
                     >
                       {pl(profit, row.currency ?? "GBP")}
+                    </td>
+                    <td className="tabular py-2 text-right text-xs">
+                      {row.next_earnings ? (
+                        <span
+                          className={
+                            row.has_earnings_warning
+                              ? "text-warning"
+                              : "text-text-muted"
+                          }
+                          title={
+                            row.has_earnings_warning
+                              ? "Reports before this contract expires — option prices usually fall sharply straight after results"
+                              : `Reports on ${row.next_earnings}`
+                          }
+                        >
+                          {row.next_earnings.slice(5)} · {row.days_to_earnings}d
+                        </span>
+                      ) : (
+                        <span className="text-text-muted/50">—</span>
+                      )}
                     </td>
                     <td className="tabular py-2 text-right text-xs text-text-muted">
                       {tab === "open"
@@ -560,6 +800,7 @@ export function PositionsTable() {
                 >
                   {pl(tab === "open" ? totals.unrealised_pl : totals.realised_pl)}
                 </td>
+                <td />
                 <td />
               </tr>
             </tfoot>

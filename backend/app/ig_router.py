@@ -644,6 +644,10 @@ class PositionRow(BaseModel):
     unrealised_pl: float | None
     realised_pl: float | None
     funding_paid: float | None
+    # When the company next reports. Relevant to every position, not only
+    # options: results are the commonest reason a holding gaps overnight.
+    next_earnings: date | None = None
+    days_to_earnings: int | None = None
 
     # Option-only.
     right: str | None = None
@@ -789,6 +793,10 @@ async def positions(session: SessionDep) -> PositionsOut:
             realised_pl=unrealised if position.closed_at is not None else None,
             funding_paid=funding_paid or None,
         )
+        if ticker:
+            reports_on = await _next_earnings(session, ticker)
+            row.next_earnings = reports_on
+            row.days_to_earnings = (reports_on - today).days if reports_on else None
         # For a share bet you control exactly what it is worth, so the two
         # coincide and the delta is one by definition.
         row.market_value = row.notional
