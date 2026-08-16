@@ -325,7 +325,10 @@ async def _record_option(
 
     contracts = _decimal(position.get("size")) or Decimal(0)
     direction = "long" if (position.get("direction") or "BUY").upper() == "BUY" else "short"
-    multiplier = _decimal(position.get("contractSize")) or Decimal(100)
+    # IG reports contractSize 1.0 for spread-bet options because size is
+    # currency-per-point, not contracts. The economically equivalent
+    # shares-per-contract is 100 — see the mark comment below.
+    multiplier = Decimal(100)
     open_level = _decimal(position.get("openLevel"))
     currency = position.get("currency")
 
@@ -337,7 +340,11 @@ async def _record_option(
             right=epic_row.option_right, strike=epic_row.option_strike,
             expiry=epic_row.option_expiry, contracts=contracts, direction=direction,
             multiplier=multiplier,
-            premium=(open_level * contracts * multiplier) if open_level else None,
+            premium=(
+                (open_level / Decimal(str(mapping_module.strike_scale(currency)))
+                 * contracts * multiplier)
+                if open_level else None
+            ),
             currency=currency,
             opened_at=_timestamp(position.get("createdDateUTC") or position.get("createdDate")),
             iv_at_entry=None, iv_estimated=True, closed_at=None, last_seen=now,
@@ -346,17 +353,30 @@ async def _record_option(
     else:
         row.contracts = contracts
         row.underlying_ticker = epic_row.underlying_ticker or row.underlying_ticker
+        # Also on update: rows written before the multiplier was understood
+        # carry IG's contractSize of 1, which makes every exposure and decay
+        # figure a hundredth of its real size.
+        row.multiplier = multiplier
         row.last_seen = now
         row.closed_at = None
 
-    # Today's mark, from IG's own quote. Greeks are computed later by the
-    # analytics layer, which needs the underlying price.
+    # Today's mark, in the UNDERLYING's units.
+    #
+    # IG quotes these in points, where a point is one cent: a 985 bid on a
+    # $350-strike Alphabet call is $9.85. Size is currency-per-point, so
+    # size 1.0 behaves exactly like one 100-share contract — a $1 move in the
+    # underlying is 100 points, which at $1/point is $100, the same as
+    # delta x $1 x 100 shares. That is why multiplier is 100 and the mark is
+    # divided by the same scale as the strike: both must live in dollars for
+    # the option maths to mean anything.
+    scale = Decimal(str(mapping_module.strike_scale(currency)))
     bid = _decimal(market.get("bid"))
     offer = _decimal(market.get("offer"))
     mark = bid if direction == "long" else offer
     if mark is None:
         mark = bid or offer
     if mark is not None:
+        mark = mark / scale
         await session.execute(
             pg_insert(OptionMark)
             .values(deal_id=deal_id, as_of=now.date(), mark=mark,

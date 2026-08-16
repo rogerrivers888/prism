@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # Benchmark (SONIA for GBP). Configurable because it moves and Prism does
     # not have a rates feed.
     ig_benchmark_rate_pct: float = 4.0
+    # Risk-free rate for the option maths. Same caveat as the benchmark: it
+    # moves, and Prism has no rates feed.
+    ig_option_risk_free_pct: float = 4.0
 
     @property
     def async_database_url(self) -> str:

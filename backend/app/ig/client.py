@@ -272,6 +272,12 @@ class IGClient:
                 headers=self._headers(version="1"),
                 json={"accountId": account_id},
             )
+            if response.status_code == 412 and "must-be-different" in response.text:
+                # Already on this account. IG treats that as an error; for our
+                # purposes it is the desired state, and the session's tokens
+                # are unchanged.
+                self._active_account = account_id
+                return
             if response.status_code >= 400:
                 raise IGError(
                     f"IG {response.status_code} switching to account: "

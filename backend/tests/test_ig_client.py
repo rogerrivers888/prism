@@ -212,3 +212,20 @@ async def test_switching_twice_to_the_same_account_is_skipped():
     await client.positions("A1")
     await client.positions("A1")
     assert len(switches) == 1, "should not re-switch to the account already active"
+
+
+@pytest.mark.asyncio
+async def test_switching_to_the_already_active_account_is_not_an_error():
+    """IG answers 412 'must-be-different' when the session is already on the
+    requested account. That is the state we wanted, not a failure."""
+    def handler(request):
+        if request.url.path.endswith("/session") and request.method == "POST":
+            return login_response(request)
+        if request.method == "PUT":
+            return httpx.Response(
+                412, json={"errorCode": "error.switch.accountId-must-be-different"}
+            )
+        return httpx.Response(200, json={"positions": []})
+
+    client = make_client(handler)
+    assert await client.positions("ABC1") == {"positions": []}
