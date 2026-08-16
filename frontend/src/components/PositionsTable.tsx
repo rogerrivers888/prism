@@ -525,6 +525,44 @@ export function PositionsTable() {
                 );
               })}
             </tbody>
+            {/* Repeated at the foot as well as the head. After scrolling a
+                long list the totals are off screen, and the bottom of the
+                table is where you look for them. */}
+            <tfoot>
+              <tr className="border-t-2 border-border-strong font-medium">
+                <td className="py-2">
+                  Total
+                  <span className="ml-1.5 text-xs font-normal text-text-muted">
+                    {totals.positions} {tab === "open" ? "open" : "closed"}
+                    {rows.length !== (tab === "open" ? data.open.length : data.closed.length) &&
+                      " (filtered)"}
+                  </span>
+                </td>
+                <td />
+                <td className="tabular py-2 text-right">{money(totals.notional)}</td>
+                <td className="tabular py-2 text-right text-text-muted">
+                  {money(totals.market_value)}
+                </td>
+                <td className="tabular py-2 text-right">
+                  {money(totals.at_risk)}
+                  {totals.at_risk_unknown > 0 && (
+                    <span className="ml-1 text-[10px] font-normal text-warning">
+                      +{totals.at_risk_unknown} uncapped
+                    </span>
+                  )}
+                </td>
+                <td
+                  className={`tabular py-2 text-right ${
+                    (tab === "open" ? totals.unrealised_pl : totals.realised_pl) >= 0
+                      ? "text-positive"
+                      : "text-negative"
+                  }`}
+                >
+                  {pl(tab === "open" ? totals.unrealised_pl : totals.realised_pl)}
+                </td>
+                <td />
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
