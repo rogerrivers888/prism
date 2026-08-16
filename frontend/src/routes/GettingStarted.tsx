@@ -142,7 +142,7 @@ export default function GettingStarted() {
                 aria-hidden
                 className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] ${
                   step.done
-                    ? "border-accent bg-accent text-surface"
+                    ? "border-accent bg-accent text-accent-contrast"
                     : "border-border text-text-muted"
                 }`}
               >

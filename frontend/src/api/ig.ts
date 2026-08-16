@@ -121,3 +121,70 @@ export function useReconciliation() {
     },
   });
 }
+
+export type PositionRow = {
+  deal_id: string;
+  account_id: string;
+  account_label: string | null;
+  regime: string;
+  kind: string;
+  ticker: string | null;
+  name: string;
+  sector: string | null;
+  direction: string;
+  size: number;
+  currency: string | null;
+  opened_at: string | null;
+  closed_at: string | null;
+  days_held: number | null;
+  open_level: number | null;
+  current_level: number | null;
+  notional: number | null;
+  at_risk: number | null;
+  at_risk_basis: string;
+  unrealised_pl: number | null;
+  realised_pl: number | null;
+  funding_paid: number | null;
+  right: string | null;
+  strike: number | null;
+  expiry: string | null;
+  days_to_expiry: number | null;
+  breakeven_price: number | null;
+  move_required_pct: number | null;
+  theta_per_day: number | null;
+  probability: number | null;
+  has_earnings_warning: boolean;
+};
+
+export type PositionTotals = {
+  positions: number;
+  notional: number;
+  at_risk: number;
+  at_risk_known: number;
+  at_risk_unknown: number;
+  unrealised_pl: number;
+  realised_pl: number;
+  funding_paid: number;
+  currency: string;
+};
+
+export type PositionsOut = {
+  open: PositionRow[];
+  closed: PositionRow[];
+  totals_open: PositionTotals;
+  totals_closed: PositionTotals;
+  by_account: Record<string, PositionTotals>;
+  sectors: string[];
+  kinds: string[];
+};
+
+export function usePositions() {
+  return useQuery<PositionsOut>({
+    queryKey: ["ig-positions"],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/ig/positions`);
+      if (!response.ok) throw new Error("could not load your positions");
+      return response.json();
+    },
+  });
+}

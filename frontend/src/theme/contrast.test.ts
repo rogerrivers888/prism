@@ -85,3 +85,4 @@ describe.each([
     expect(contrast(T.warning, background)).toBeGreaterThanOrEqual(3);
   });
 });
+

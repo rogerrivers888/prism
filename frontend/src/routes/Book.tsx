@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { req, useBook } from "../api/screens";
 import { IGAccounts } from "../components/IGAccounts";
+import { PositionsTable } from "../components/PositionsTable";
 import { NothingYet, PagePurpose } from "../components/PagePurpose";
 import { useRegisterScreen } from "../components/ScreenContext";
 
@@ -57,15 +58,24 @@ export function Book() {
         </div>
 
         <section className="mt-5">
-          <h2 className="font-display text-xl font-semibold">Your IG accounts</h2>
+          <h2 className="font-display text-xl font-semibold">Everything you hold</h2>
           <p className="mt-1 max-w-2xl text-sm text-text-muted">
             Read automatically from IG. Prism can only read — it cannot place, change or
-            close a trade, and has no ability to move money.
+            close a trade. Click any row for the full detail.
           </p>
+          <div className="mt-3">
+            <PositionsTable />
+          </div>
+        </section>
+
+        <details className="mt-6">
+          <summary className="cursor-pointer text-sm text-text-muted">
+            Account-by-account view, with interest and margin
+          </summary>
           <div className="mt-3">
             <IGAccounts />
           </div>
-        </section>
+        </details>
 
         <section className="mt-8">
           <h2 className="font-display text-xl font-semibold">Positions you logged by hand</h2>

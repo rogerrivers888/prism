@@ -122,3 +122,38 @@ describe("the promote flow is findable", () => {
     expect(flow).toBeLessThan(tables);
   });
 });
+
+
+describe("primary buttons are actually visible", () => {
+  it("defines the accent token every confirm button references", () => {
+    // Before this token existed, bg-accent resolved to nothing: every primary
+    // button in the app rendered with no background and read as plain text.
+    // On the reconciliation screen that made it look as though the only
+    // option was "Not now".
+    const css = readFileSync(join(__dirname, "..", "index.css"), "utf8");
+    expect(css).toContain("--accent:");
+    expect(css).toContain("--accent-contrast:");
+    expect(css).toContain("--color-accent:");
+    expect(css).toContain("--color-accent-contrast:");
+  });
+
+  it("no primary button puts accent text on an accent background", () => {
+    for (const file of [...screens, "../components/PromoteFlow.tsx",
+                        "../components/PagePurpose.tsx"]) {
+      const path = file.startsWith("..")
+        ? join(ROUTES, file)
+        : join(ROUTES, file);
+      let source: string;
+      try {
+        source = readFileSync(path, "utf8");
+      } catch {
+        continue;
+      }
+      expect(
+        source.includes("bg-accent") && source.includes("bg-accent px-") &&
+          /bg-accent[^"']*text-surface\b/.test(source),
+        `${file} uses text-surface on an accent background, which is unreadable`,
+      ).toBe(false);
+    }
+  });
+});

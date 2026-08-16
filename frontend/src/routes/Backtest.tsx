@@ -588,7 +588,7 @@ export default function Backtest() {
           type="button"
           disabled={invalid || run.isPending}
           onClick={() => run.mutate(params)}
-          className="border border-accent bg-accent px-4 py-2 text-sm font-medium text-surface disabled:opacity-40"
+          className="border border-accent bg-accent px-4 py-2 text-sm font-medium text-accent-contrast disabled:opacity-40"
         >
           {run.isPending ? "Running…" : "Run backtest"}
         </button>

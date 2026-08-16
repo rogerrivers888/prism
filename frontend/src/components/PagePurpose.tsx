@@ -97,7 +97,7 @@ export function NothingYet({
           {action.to ? (
             <a
               href={action.to}
-              className="inline-block rounded border border-accent bg-accent px-3 py-1.5 text-sm font-medium text-surface"
+              className="inline-block rounded border border-accent bg-accent px-3 py-1.5 text-sm font-medium text-accent-contrast"
             >
               {action.label}
             </a>
@@ -105,7 +105,7 @@ export function NothingYet({
             <button
               type="button"
               onClick={action.onClick}
-              className="rounded border border-accent bg-accent px-3 py-1.5 text-sm font-medium text-surface"
+              className="rounded border border-accent bg-accent px-3 py-1.5 text-sm font-medium text-accent-contrast"
             >
               {action.label}
             </button>

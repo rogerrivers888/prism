@@ -127,7 +127,7 @@ export default function Reconciliation() {
                           type="button"
                           disabled={busy === row.id}
                           onClick={() => resolve(row.id, true)}
-                          className="rounded border border-accent bg-accent px-3 py-1 text-xs font-medium text-surface disabled:opacity-40"
+                          className="rounded border border-accent bg-accent px-3 py-1 text-xs font-medium text-accent-contrast disabled:opacity-40"
                         >
                           {kind === "matched" ? "Yes, same position" : "Import it"}
                         </button>

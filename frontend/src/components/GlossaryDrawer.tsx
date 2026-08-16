@@ -62,7 +62,7 @@ function PersonalNote({ term }: { term: GlossaryTerm }) {
                   { onSuccess: () => setEditing(false) },
                 )
               }
-              className="rounded border border-accent bg-accent px-3 py-1 text-xs text-surface disabled:opacity-40"
+              className="rounded border border-accent bg-accent px-3 py-1 text-xs text-accent-contrast disabled:opacity-40"
             >
               {save.isPending ? "Saving…" : "Save"}
             </button>

@@ -130,7 +130,7 @@ export function PromoteFlow({ strategy }: { strategy: StrategyDetail }) {
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="mt-3 rounded border border-accent bg-accent px-4 py-2 text-sm font-medium text-surface"
+          className="mt-3 rounded border border-accent bg-accent px-4 py-2 text-sm font-medium text-accent-contrast"
         >
           Put this to work with pretend money
         </button>
@@ -218,7 +218,7 @@ export function PromoteFlow({ strategy }: { strategy: StrategyDetail }) {
               { onSuccess: () => markDone("promoted_strategy") },
             )
           }
-          className="rounded border border-accent bg-accent px-4 py-2 text-sm font-medium text-surface disabled:opacity-40"
+          className="rounded border border-accent bg-accent px-4 py-2 text-sm font-medium text-accent-contrast disabled:opacity-40"
         >
           {promote.isPending ? "Starting…" : "Yes — start it with pretend money"}
         </button>

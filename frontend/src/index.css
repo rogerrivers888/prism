@@ -33,6 +33,11 @@
   --warning: oklch(58% 0.14 75);
 
   --focus: oklch(55% 0.17 250);
+  /* Primary actions. Referenced by every confirm button in the app; without
+     it those buttons rendered with no background and read as plain text,
+     which is why the reconciliation screen appeared to offer only "Not now". */
+  --accent: oklch(50% 0.16 250);
+  --accent-contrast: oklch(99% 0 0);
 }
 
 .dark {
@@ -50,6 +55,8 @@
   --warning: oklch(80% 0.13 75);
 
   --focus: oklch(72% 0.15 250);
+  --accent: oklch(70% 0.15 250);
+  --accent-contrast: oklch(16% 0.01 255);
 }
 
 @theme inline {
@@ -64,6 +71,8 @@
   --color-negative: var(--negative);
   --color-warning: var(--warning);
   --color-focus: var(--focus);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
 
   --color-lens-trend: var(--lens-trend);
   --color-lens-growth: var(--lens-growth);
